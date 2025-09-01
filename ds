@@ -17,7 +17,7 @@ getgenv().V = "Kaitundiamond"
 loadstring(game:HttpGet("https://raw.githubusercontent.com/AAwful/Vector_Hub/0/v2"))()
 
 -- Sau 10 giây chạy script thứ 2
-task.delay(10, function()
+task.delay(8, function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/MQPS7/99-Night-in-the-Forset/refs/heads/main/Gfarm"))()
 end)
 
