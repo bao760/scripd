@@ -87,7 +87,7 @@ Footer.Parent = Frame
 
 -- Update ping liên tục
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(0.1) do
         local ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString()
         if PingLabel then
             PingLabel.Text = "Ping: " .. ping
