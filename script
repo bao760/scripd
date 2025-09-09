@@ -1,0 +1,117 @@
+getgenv().AutoLoad = true
+
+math.randomseed(tick())
+
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local VirtualUser = game:GetService("VirtualUser")
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+-- ⚙️ Cấu hình
+getgenv().AutoLoad = true -- 🔴 tắt auto load (true = bật, false = tắt)
+
+-- 🟢 Key & Load Speed Hub X
+getgenv().script_key = "BvMJeyLAFaEyOrZzQKEubHVRPVeMVzSn"
+local ok, err = pcall(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
+end)
+if not ok then
+    warn("Load Speed Hub X failed:", err)
+end
+
+local function notify(title, text)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {Title = title, Text = text, Duration = 4})
+    end)
+end
+
+-- 🖱 Click 1 lần giữa màn hình khi camera đã sẵn sàng
+task.spawn(function()
+    repeat task.wait() until camera and camera.ViewportSize.X > 0
+    task.wait(0.5) -- delay thêm cho chắc
+    local center = camera.ViewportSize / 2
+    VirtualUser:Button1Down(center)
+    task.wait(0.05)
+    VirtualUser:Button1Up(center)
+end)
+
+-- 🖱 Auto click giữa màn hình 10 lần/s
+task.spawn(function()
+    repeat task.wait() until camera and camera.ViewportSize.X > 0
+    while task.wait(0.1) do
+        pcall(function()
+            local center = camera.ViewportSize / 2
+            VirtualUser:Button1Down(center)
+            task.wait(0.02)
+            VirtualUser:Button1Up(center)
+        end)
+    end
+end)
+
+-- 🔍 Tìm server khác
+local function findOtherServer()
+    local candidates, cursor, tries = {}, nil, 0
+    repeat
+        local url = "https://games.roblox.com/v1/games/"..tostring(game.PlaceId).."/servers/Public?limit=100"
+        if cursor and cursor ~= "" then
+            url = url .. "&cursor=" .. tostring(cursor)
+        end
+
+        local ok, res = pcall(function() return game:HttpGet(url) end)
+        if not ok or not res or res == "" then
+            return nil, "HttpGet failed"
+        end
+
+        local data
+        local decodeOk = pcall(function() data = HttpService:JSONDecode(res) end)
+        if not decodeOk then return nil, "JSON decode failed" end
+
+        for _, s in ipairs(data.data or {}) do
+            if tostring(s.id) ~= tostring(game.JobId) and (s.playing < s.maxPlayers) then
+                table.insert(candidates, s.id)
+            end
+        end
+
+        cursor = data.nextPageCursor
+        tries += 1
+    until not cursor or cursor == "" or tries >= 6
+
+    if #candidates == 0 then
+        return nil, "Không tìm được server khác."
+    end
+    return candidates[math.random(1, #candidates)]
+end
+
+-- 🔄 Rejoin/hop server
+local function attemptRejoin()
+    notify("Rejoin", "Đang tìm server mới...")
+    local serverId, err = findOtherServer()
+    if serverId then
+        local ok, terr = pcall(function()
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, serverId, player)
+        end)
+        if not ok then
+            warn("TeleportToPlaceInstance lỗi:", terr)
+            notify("Rejoin", "Thử Teleport()...")
+            pcall(function() TeleportService:Teleport(game.PlaceId) end)
+        end
+    else
+        warn("Không tìm server:", err)
+        notify("Rejoin", "Thử Teleport()...")
+        pcall(function() TeleportService:Teleport(game.PlaceId) end)
+    end
+end
+
+-- 🕒 Sau 15s sẽ rejoin
+task.delay(10, function()
+    attemptRejoin()
+    task.wait(0)
+    if getgenv().AutoLoad then
+        -- AutoLoad bật thì tự load lại script ngoài, bạn có thể thêm URL vào đây
+    else
+        notify("AutoLoad", "Đang tắt, không tự load lại script.")
+    end
+end)
