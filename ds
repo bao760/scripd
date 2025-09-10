@@ -1,5 +1,5 @@
 --// ================================
---// Script Auto Loader + UI Status + Fix Lag + Anti-Kick
+--// Script Auto Loader + UI Status + Fix Lag + Anti-Kick + Kill Aura (Auto ON)
 --// By SDVT & ChatGpt
 --// ================================
 
@@ -11,7 +11,7 @@ else
 end
 
 --// ================================
---// UI góc phải (hiện trước khi load)
+--// UI góc phải
 --// ================================
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -26,8 +26,8 @@ ScreenGui.Name = "RunStatusGui"
 ScreenGui.ResetOnSpawn = false
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 260, 0, 105)
-Frame.Position = UDim2.new(1, -270, 1, -150)
+Frame.Size = UDim2.new(0, 260, 0, 125)
+Frame.Position = UDim2.new(1, -270, 1, -170)
 Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Frame.BackgroundTransparency = 0.15
 Frame.BorderSizePixel = 0
@@ -76,6 +76,16 @@ AntiKickLabel.TextXAlignment = Enum.TextXAlignment.Left
 AntiKickLabel.Font = Enum.Font.GothamBold
 AntiKickLabel.TextSize = 13
 
+local KillAuraLabel = Instance.new("TextLabel", Frame)
+KillAuraLabel.Size = UDim2.new(1, -10, 0, 20)
+KillAuraLabel.Position = UDim2.new(0, 5, 0, 95)
+KillAuraLabel.BackgroundTransparency = 1
+KillAuraLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+KillAuraLabel.Text = "Kill Aura: ON (Press 1 to toggle)"
+KillAuraLabel.TextXAlignment = Enum.TextXAlignment.Left
+KillAuraLabel.Font = Enum.Font.GothamBold
+KillAuraLabel.TextSize = 13
+
 -- Update Ping
 task.spawn(function()
     local Stats = game:GetService("Stats")
@@ -109,6 +119,47 @@ oldKick = hookfunction(Players.LocalPlayer.Kick, function(...)
 end)
 
 setreadonly(mt, true)
+
+--// ================================
+--// Kill Aura (auto ON, toggle phím 1)
+--// ================================
+local UIS = game:GetService("UserInputService")
+local killAura = true -- auto ON
+local range = 20 -- bán kính kill
+
+local function startKillAura()
+    task.spawn(function()
+        while killAura do
+            task.wait(0.2)
+            pcall(function()
+                for _, mob in ipairs(workspace:GetDescendants()) do
+                    if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob ~= player.Character then
+                        if (mob.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude < range then
+                            mob.Humanoid:TakeDamage(1000) -- tuỳ game
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+-- Bật sẵn khi script load
+startKillAura()
+
+-- Toggle bằng phím 1
+UIS.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.One then
+        killAura = not killAura
+        if killAura then
+            KillAuraLabel.Text = "Kill Aura: ON (Press 1 to toggle)"
+            startKillAura()
+        else
+            KillAuraLabel.Text = "Kill Aura: OFF (Press 1 to toggle)"
+        end
+    end
+end)
 
 --// ================================
 --// Load Scripts
