@@ -1,6 +1,6 @@
 --// ================================
---// Script Auto Loader + UI Status + Fix Lag
---// By SDVT & ChatGpt (Load Gfarm First)
+--// Script Auto Loader + UI Status + Fix Lag + Anti-Kick
+--// By SDVT & ChatGpt
 --// ================================
 
 -- Đếm số lần chạy
@@ -27,8 +27,8 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = playerGui
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 260, 0, 85)
-Frame.Position = UDim2.new(1, -270, 1, -130)
+Frame.Size = UDim2.new(0, 260, 0, 105)
+Frame.Position = UDim2.new(1, -270, 1, -150)
 Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Frame.BackgroundTransparency = 0.15
 Frame.BorderSizePixel = 0
@@ -67,6 +67,16 @@ StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextSize = 13
 
+local AntiKickLabel = Instance.new("TextLabel", Frame)
+AntiKickLabel.Size = UDim2.new(1, -10, 0, 20)
+AntiKickLabel.Position = UDim2.new(0, 5, 0, 70)
+AntiKickLabel.BackgroundTransparency = 1
+AntiKickLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+AntiKickLabel.Text = "Anti-Kick: Enabled"
+AntiKickLabel.TextXAlignment = Enum.TextXAlignment.Left
+AntiKickLabel.Font = Enum.Font.GothamBold
+AntiKickLabel.TextSize = 13
+
 -- Update Ping
 task.spawn(function()
     local Stats = game:GetService("Stats")
@@ -78,10 +88,34 @@ task.spawn(function()
 end)
 
 --// ================================
+--// Anti-Kick
+--// ================================
+local mt = getrawmetatable(game)
+local oldNamecall = mt.__namecall
+setreadonly(mt, false)
+
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    if tostring(method) == "Kick" or tostring(method) == "kick" then
+        warn("[Anti-Kick] Blocked kick attempt:", ...)
+        return nil
+    end
+    return oldNamecall(self, ...)
+end)
+
+local oldKick
+oldKick = hookfunction(Players.LocalPlayer.Kick, function(...)
+    warn("[Anti-Kick] Blocked Kick() call")
+    return
+end)
+
+setreadonly(mt, true)
+
+--// ================================
 --// Load Gfarm trước
 --// ================================
 task.spawn(function()
-    local ok1, err1 = pcall(function()
+    local ok1 = pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/MQPS7/99-Night-in-the-Forset/refs/heads/main/Gfarm"))()
     end)
 
@@ -95,7 +129,7 @@ task.spawn(function()
     task.delay(0.5, function()
         getgenv().V = "Kaitundiamond"
         StatusLabel.Text = "⏳ Loading Vector Hub..."
-        local ok2, err2 = pcall(function()
+        local ok2 = pcall(function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/AAwful/Vector_Hub/0/v2"))()
         end)
 
