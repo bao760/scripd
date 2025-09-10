@@ -21,10 +21,9 @@ if playerGui:FindFirstChild("RunStatusGui") then
     playerGui.RunStatusGui:Destroy()
 end
 
-local ScreenGui = Instance.new("ScreenGui")
+local ScreenGui = Instance.new("ScreenGui", playerGui)
 ScreenGui.Name = "RunStatusGui"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = playerGui
 
 local Frame = Instance.new("Frame", ScreenGui)
 Frame.Size = UDim2.new(0, 260, 0, 105)
@@ -112,7 +111,7 @@ end)
 setreadonly(mt, true)
 
 --// ================================
---// Load Gfarm trước
+--// Load Scripts
 --// ================================
 task.spawn(function()
     local ok1 = pcall(function()
@@ -125,19 +124,15 @@ task.spawn(function()
         StatusLabel.Text = "❌ Gfarm Error"
     end
 
-    -- 0.5s sau mới load Vector Hub
+    -- 0.5s sau mới chạy block bạn muốn giữ nguyên
     task.delay(0.5, function()
-        getgenv().V = "Kaitundiamond"
         StatusLabel.Text = "⏳ Loading Vector Hub..."
-        local ok2 = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/AAwful/Vector_Hub/0/v2"))()
-        end)
-
-        if ok2 then
-            StatusLabel.Text = "✅ All Scripts Loaded"
-        else
-            StatusLabel.Text = "❌ Vector Hub Error"
-        end
+        
+        -- GIỮ NGUYÊN ĐÂY
+        getgenv().V = "Kaitundiamond"
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/AAwful/Vector_Hub/0/v2"))()
+        
+        StatusLabel.Text = "✅ All Scripts Loaded"
     end)
 end)
 
