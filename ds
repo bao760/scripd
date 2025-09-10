@@ -26,8 +26,8 @@ ScreenGui.Name = "RunStatusGui"
 ScreenGui.ResetOnSpawn = false
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 260, 0, 125)
-Frame.Position = UDim2.new(1, -270, 1, -170)
+Frame.Size = UDim2.new(0, 260, 0, 145)
+Frame.Position = UDim2.new(1, -270, 1, -190)
 Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Frame.BackgroundTransparency = 0.15
 Frame.BorderSizePixel = 0
@@ -61,7 +61,7 @@ StatusLabel.Size = UDim2.new(1, -10, 0, 20)
 StatusLabel.Position = UDim2.new(0, 5, 0, 45)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-StatusLabel.Text = "⏳ Loading Gfarm..."
+StatusLabel.Text = "⏳ Loading Scripts..."
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextSize = 13
@@ -81,7 +81,7 @@ KillAuraLabel.Size = UDim2.new(1, -10, 0, 20)
 KillAuraLabel.Position = UDim2.new(0, 5, 0, 95)
 KillAuraLabel.BackgroundTransparency = 1
 KillAuraLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-KillAuraLabel.Text = "Kill Aura: ON (Press 2 to toggle)"
+KillAuraLabel.Text = "Kill Aura: ON (Press 2 to equip tool)"
 KillAuraLabel.TextXAlignment = Enum.TextXAlignment.Left
 KillAuraLabel.Font = Enum.Font.GothamBold
 KillAuraLabel.TextSize = 13
@@ -121,21 +121,43 @@ end)
 setreadonly(mt, true)
 
 --// ================================
---// Kill Aura (auto ON, toggle phím 1)
+--// Kill Aura (auto ON, equip tool bằng phím 2)
 --// ================================
 local UIS = game:GetService("UserInputService")
 local killAura = true -- auto ON
-local range = 100000000000000000 -- bán kính kill
+local range = 100000  -- tầm đánh siêu xa
+local damage = 200   -- damage
+local cd = 0.001     -- cooldown
+local toolEquipped = false
 
+-- Hàm equip tool
+local function equipTool()
+    local backpack = player:FindFirstChild("Backpack")
+    if backpack then
+        for _, item in ipairs(backpack:GetChildren()) do
+            if item:IsA("Tool") then
+                item.Parent = player.Character
+                toolEquipped = true
+                warn("[Kill Aura] Equipped tool:", item.Name)
+                break
+            end
+        end
+    end
+end
+
+-- Kill Aura loop
 local function startKillAura()
     task.spawn(function()
         while killAura do
-            task.wait(0)
+            task.wait(cd)
             pcall(function()
                 for _, mob in ipairs(workspace:GetDescendants()) do
-                    if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob ~= player.Character then
+                    if mob:FindFirstChild("Humanoid")
+                        and mob:FindFirstChild("HumanoidRootPart")
+                        and mob ~= player.Character then
+                        
                         if (mob.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude < range then
-                            mob.Humanoid:TakeDamage(10000000000000000000) -- tuỳ game
+                            mob.Humanoid:TakeDamage(damage)
                         end
                     end
                 end
@@ -144,47 +166,42 @@ local function startKillAura()
     end)
 end
 
--- Bật sẵn khi script load
+-- Auto bật khi load
 startKillAura()
 
--- Toggle bằng phím 2
+-- Nhấn phím 2 để equip tool
 UIS.InputBegan:Connect(function(input, gpe)
     if gpe then return end
-    if input.KeyCode == Enum.KeyCode.One then
-        killAura = not killAura
-        if killAura then
-            KillAuraLabel.Text = "Kill Aura: ON (Press 2 to toggle)"
-            startKillAura()
+    if input.KeyCode == Enum.KeyCode.Two then
+        if not toolEquipped then
+            equipTool()
+            KillAuraLabel.Text = "Kill Aura: ON + Tool Equipped"
         else
-            KillAuraLabel.Text = "Kill Aura: OFF (Press 2 to toggle)"
+            KillAuraLabel.Text = "Kill Aura: ON (Tool already equipped)"
         end
     end
 end)
 
 --// ================================
---// Load Scripts
+--// Load Scripts (cùng lúc)
 --// ================================
 task.spawn(function()
     local ok1 = pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/MQPS7/99-Night-in-the-Forset/refs/heads/main/Gfarm"))()
     end)
-
     if ok1 then
         StatusLabel.Text = "✅ Gfarm Loaded"
     else
         StatusLabel.Text = "❌ Gfarm Error"
     end
+end)
 
-    -- 0.5s sau mới chạy block bạn muốn giữ nguyên
-    task.delay(0.01, function()
-        StatusLabel.Text = "⏳ Loading Vector Hub..."
-        
-        -- GIỮ NGUYÊN ĐÂY
-        getgenv().V = "Kaitundiamond"
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/AAwful/Vector_Hub/0/v2"))()
-        
-        StatusLabel.Text = "✅ All Scripts Loaded"
-    end)
+task.spawn(function()
+    StatusLabel.Text = "⏳ Loading Vector Hub..."
+    -- GIỮ NGUYÊN
+    getgenv().V = "Kaitundiamond"
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/AAwful/Vector_Hub/0/v2"))()
+    StatusLabel.Text = "✅ All Scripts Loaded"
 end)
 
 --// ================================
