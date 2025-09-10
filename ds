@@ -1,58 +1,43 @@
 --// ================================
 --// Script Auto Loader + UI Status + Fix Lag
---// By SDVT & ChatGpt
+--// By SDVT & ChatGpt (Load Gfarm First)
 --// ================================
 
--- Tăng số lần chạy
+-- Đếm số lần chạy
 if not getgenv().RunCount then
     getgenv().RunCount = 1
 else
-    getgenv().RunCount = getgenv().RunCount + 1
+    getgenv().RunCount += 1
 end
 
--- Set biến toàn cục
-getgenv().V = "Kaitundiamond"
-
--- Chạy script đầu tiên
-loadstring(game:HttpGet("https://raw.githubusercontent.com/AAwful/Vector_Hub/0/v2"))()
-
--- Sau 10 giây chạy script thứ 2
-task.delay(4, function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/MQPS7/99-Night-in-the-Forset/refs/heads/main/Gfarm"))()
-end)
-
 --// ================================
---// UI góc phải
+--// UI góc phải (hiện trước khi load)
 --// ================================
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
--- Xóa UI cũ nếu có
-if player:FindFirstChild("PlayerGui"):FindFirstChild("RunStatusGui") then
-    player.PlayerGui.RunStatusGui:Destroy()
+if playerGui:FindFirstChild("RunStatusGui") then
+    playerGui.RunStatusGui:Destroy()
 end
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "RunStatusGui"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = player:WaitForChild("PlayerGui")
+ScreenGui.Parent = playerGui
 
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 250, 0, 70)
-Frame.Position = UDim2.new(1, -260, 1, -110) -- góc phải dưới
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 260, 0, 85)
+Frame.Position = UDim2.new(1, -270, 1, -130)
 Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Frame.BackgroundTransparency = 0.15
 Frame.BorderSizePixel = 0
-Frame.Parent = ScreenGui
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 12)
+local stroke = Instance.new("UIStroke", Frame)
+stroke.Thickness = 1.5
+stroke.Color = Color3.fromRGB(0, 255, 127)
 
-local UICorner = Instance.new("UICorner", Frame)
-UICorner.CornerRadius = UDim.new(0, 12)
-
-local UIStroke = Instance.new("UIStroke", Frame)
-UIStroke.Thickness = 1.5
-UIStroke.Color = Color3.fromRGB(0, 255, 127)
-
-local RunLabel = Instance.new("TextLabel")
+local RunLabel = Instance.new("TextLabel", Frame)
 RunLabel.Size = UDim2.new(1, -10, 0, 20)
 RunLabel.Position = UDim2.new(0, 5, 0, 5)
 RunLabel.BackgroundTransparency = 1
@@ -61,9 +46,8 @@ RunLabel.Text = "Run #" .. tostring(getgenv().RunCount)
 RunLabel.TextXAlignment = Enum.TextXAlignment.Left
 RunLabel.Font = Enum.Font.GothamBold
 RunLabel.TextSize = 15
-RunLabel.Parent = Frame
 
-local PingLabel = Instance.new("TextLabel")
+local PingLabel = Instance.new("TextLabel", Frame)
 PingLabel.Size = UDim2.new(1, -10, 0, 20)
 PingLabel.Position = UDim2.new(0, 5, 0, 25)
 PingLabel.BackgroundTransparency = 1
@@ -72,57 +56,75 @@ PingLabel.Text = "Ping: ..."
 PingLabel.TextXAlignment = Enum.TextXAlignment.Left
 PingLabel.Font = Enum.Font.Gotham
 PingLabel.TextSize = 15
-PingLabel.Parent = Frame
 
-local Footer = Instance.new("TextLabel")
-Footer.Size = UDim2.new(1, -10, 0, 20)
-Footer.Position = UDim2.new(0, 5, 0, 47)
-Footer.BackgroundTransparency = 1
-Footer.TextColor3 = Color3.fromRGB(200, 200, 200)
-Footer.Text = "By SDVT & ChatGpt | Fix Lag"
-Footer.TextXAlignment = Enum.TextXAlignment.Left
-Footer.Font = Enum.Font.Gotham
-Footer.TextSize = 13
-Footer.Parent = Frame
+local StatusLabel = Instance.new("TextLabel", Frame)
+StatusLabel.Size = UDim2.new(1, -10, 0, 20)
+StatusLabel.Position = UDim2.new(0, 5, 0, 45)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+StatusLabel.Text = "⏳ Loading Gfarm..."
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextSize = 13
 
--- Update ping liên tục
+-- Update Ping
 task.spawn(function()
-    while task.wait(0.1) do
-        local ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValueString()
-        if PingLabel then
-            PingLabel.Text = "Ping: " .. ping
-        else
-            break
-        end
+    local Stats = game:GetService("Stats")
+    while task.wait(0.5) do
+        if not PingLabel.Parent then break end
+        local ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
+        PingLabel.Text = "Ping: " .. ping
     end
 end)
 
 --// ================================
---// Fix Lag Siêu Mạnh
+--// Load Gfarm trước
 --// ================================
 task.spawn(function()
-    -- Tắt shadow + chất lượng thấp
-    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    local ok1, err1 = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/MQPS7/99-Night-in-the-Forset/refs/heads/main/Gfarm"))()
+    end)
 
-    -- Xoá mây, khói, hiệu ứng thừa
-    for _, obj in pairs(workspace:GetDescendants()) do
+    if ok1 then
+        StatusLabel.Text = "✅ Gfarm Loaded"
+    else
+        StatusLabel.Text = "❌ Gfarm Error"
+    end
+
+    -- 0.5s sau mới load Vector Hub
+    task.delay(0.5, function()
+        getgenv().V = "Kaitundiamond"
+        StatusLabel.Text = "⏳ Loading Vector Hub..."
+        local ok2, err2 = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/AAwful/Vector_Hub/0/v2"))()
+        end)
+
+        if ok2 then
+            StatusLabel.Text = "✅ All Scripts Loaded"
+        else
+            StatusLabel.Text = "❌ Vector Hub Error"
+        end
+    end)
+end)
+
+--// ================================
+--// Fix Lag
+--// ================================
+task.spawn(function()
+    pcall(function()
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    end)
+
+    for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Fire") then
-            obj.Lifetime = NumberRange.new(0)
             obj.Enabled = false
         elseif obj:IsA("Explosion") then
             obj.Visible = false
         end
     end
 
-    -- Tắt Water Wave / Reflections
-    game:GetService("Lighting").GlobalShadows = false
-    game:GetService("Lighting").FogEnd = 9e9
-    game:GetService("Lighting").Brightness = 1
-
-    -- Tắt phần tử GUI thừa
-    for _, v in pairs(player.PlayerGui:GetDescendants()) do
-        if v:IsA("ImageLabel") or v:IsA("ImageButton") then
-            v.ScaleType = Enum.ScaleType.Slice
-        end
-    end
+    local Lighting = game:GetService("Lighting")
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    Lighting.Brightness = 1
 end)
