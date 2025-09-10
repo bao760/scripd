@@ -81,7 +81,7 @@ KillAuraLabel.Size = UDim2.new(1, -10, 0, 20)
 KillAuraLabel.Position = UDim2.new(0, 5, 0, 95)
 KillAuraLabel.BackgroundTransparency = 1
 KillAuraLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-KillAuraLabel.Text = "Kill Aura: ON (Press 1 to toggle)"
+KillAuraLabel.Text = "Kill Aura: ON (Press 2 to toggle)"
 KillAuraLabel.TextXAlignment = Enum.TextXAlignment.Left
 KillAuraLabel.Font = Enum.Font.GothamBold
 KillAuraLabel.TextSize = 13
@@ -125,17 +125,17 @@ setreadonly(mt, true)
 --// ================================
 local UIS = game:GetService("UserInputService")
 local killAura = true -- auto ON
-local range = 20 -- bán kính kill
+local range = 100000000000000000 -- bán kính kill
 
 local function startKillAura()
     task.spawn(function()
         while killAura do
-            task.wait(0.2)
+            task.wait(0)
             pcall(function()
                 for _, mob in ipairs(workspace:GetDescendants()) do
                     if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob ~= player.Character then
                         if (mob.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude < range then
-                            mob.Humanoid:TakeDamage(1000) -- tuỳ game
+                            mob.Humanoid:TakeDamage(10000000000000000000) -- tuỳ game
                         end
                     end
                 end
@@ -147,16 +147,16 @@ end
 -- Bật sẵn khi script load
 startKillAura()
 
--- Toggle bằng phím 1
+-- Toggle bằng phím 2
 UIS.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.One then
         killAura = not killAura
         if killAura then
-            KillAuraLabel.Text = "Kill Aura: ON (Press 1 to toggle)"
+            KillAuraLabel.Text = "Kill Aura: ON (Press 2 to toggle)"
             startKillAura()
         else
-            KillAuraLabel.Text = "Kill Aura: OFF (Press 1 to toggle)"
+            KillAuraLabel.Text = "Kill Aura: OFF (Press 2 to toggle)"
         end
     end
 end)
@@ -176,7 +176,7 @@ task.spawn(function()
     end
 
     -- 0.5s sau mới chạy block bạn muốn giữ nguyên
-    task.delay(0.5, function()
+    task.delay(0.01, function()
         StatusLabel.Text = "⏳ Loading Vector Hub..."
         
         -- GIỮ NGUYÊN ĐÂY
