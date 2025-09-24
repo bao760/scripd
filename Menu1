@@ -1,5 +1,5 @@
 -- =========================================================
--- ✨ All SDVT Executor Script (Fix Menu + UI Button) ✨
+-- ✨ All SDVT Executor Script (Vote Menu chọn UI) ✨
 -- By SDVT Team + Assistant
 -- =========================================================
 
@@ -9,86 +9,50 @@ local player = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 local VIM = game:GetService("VirtualInputManager")
 local UIS = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
 
 -- ==========================
--- Notify + Loading %
+-- Notify (toast)
 -- ==========================
 local function Notify(text, duration, color)
-    duration = duration or 3
-    color = color or Color3.fromRGB(0, 170, 255)
-
+    duration = duration or 4
+    color = color or Color3.fromRGB(0, 170, 0)
     local sg = Instance.new("ScreenGui")
     sg.Name = "SDVT_Toast_"..tostring(math.random(1,9999))
+    sg.ResetOnSpawn = false
     sg.Parent = CoreGui
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 280, 0, 60)
-    frame.Position = UDim2.new(0.5, -140, 0.12, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    frame.BorderSizePixel = 0
-    frame.Parent = sg
-
+    local holder = Instance.new("Frame")
+    holder.AnchorPoint = Vector2.new(0.5, 0)
+    holder.Position = UDim2.new(0.5, 0, 0.12, 0)
+    holder.Size = UDim2.new(0, 320, 0, 52)
+    holder.BackgroundColor3 = Color3.fromRGB(25,25,25)
+    holder.BackgroundTransparency = 0.15
+    holder.Parent = sg
+    holder.BorderSizePixel = 0
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = frame
-
+    corner.Parent = holder
     local stroke = Instance.new("UIStroke")
     stroke.Color = color
-    stroke.Thickness = 2
-    stroke.Parent = frame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -20, 1, -20)
-    label.Position = UDim2.new(0, 10, 0, 10)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextScaled = true
-    label.Font = Enum.Font.SourceSansBold
-    label.Text = text
-    label.Parent = frame
-
-    task.spawn(function()
+    stroke.Thickness = 1.6
+    stroke.Parent = holder
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, -16, 1, -16)
+    lbl.Position = UDim2.new(0, 8, 0, 8)
+    lbl.BackgroundTransparency = 1
+    lbl.TextColor3 = Color3.fromRGB(255,255,255)
+    lbl.TextXAlignment = Enum.TextXAlignment.Center
+    lbl.TextYAlignment = Enum.TextYAlignment.Center
+    lbl.Font = Enum.Font.SourceSansBold
+    lbl.TextScaled = true
+    lbl.Text = text
+    lbl.Parent = holder
+    task.defer(function()
         task.wait(duration)
         sg:Destroy()
     end)
 end
 
--- Loading % 1 → 100
-task.spawn(function()
-    for i = 1, 100 do
-        Notify("⚡ Running... "..i.."%", 0.05)
-        task.wait(0.05)
-    end
-end)
-
--- ==========================
--- Drag function
--- ==========================
-local function MakeDraggable(guiObject)
-    local dragging, dragStart, startPos
-    guiObject.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = guiObject.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            guiObject.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-end
+Notify("⚡ Đang chạy script...", 3)
 
 -- ==========================
 -- Safe HttpGet
@@ -131,10 +95,9 @@ local function OpenRayfieldUI()
        KeySystem = false
     })
 
-    -- 🥭 BloxFruit
     local BloxTab = Window:CreateTab("🥭 BloxFruit")
     BloxTab:CreateButton({
-        Name = "⚡ Speed Hub X",
+        Name = "⚡ Speed Hub X (NoKey)",
         Callback = function()
             getgenv().script_key="BvMJeyLAFaEyOrZzQKEubHVRPVeMVzSn"
             loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
@@ -154,10 +117,9 @@ local function OpenRayfieldUI()
     })
     BloxTab:CreateLabel("...Coming Soon...")
 
-    -- 🌱 Grow A Garden
     local GardenTab = Window:CreateTab("🌱 Grow A Garden")
     GardenTab:CreateButton({
-        Name = "⚡ Speed Hub X",
+        Name = "⚡ Speed Hub X (Auto Key)",
         Callback = function()
             getgenv().script_key="BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK"
             loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
@@ -165,10 +127,9 @@ local function OpenRayfieldUI()
     })
     GardenTab:CreateLabel("...Coming Soon...")
 
-    -- 🌲 99 Nights
     local ForestTab = Window:CreateTab("🌲 99 Nights in the Forest")
     ForestTab:CreateButton({
-        Name = "🌌 BONKHUB",
+        Name = "🌌 BONKHUB (Key)",
         Callback = function()
             local success = pcall(function()
                 loadstring(game:HttpGet("https://bonkhub.online/Loader.lua", true))()
@@ -180,19 +141,19 @@ local function OpenRayfieldUI()
     })
     ForestTab:CreateLabel("...Coming Soon...")
 
-    -- 👑 Admin
     local AdminTab = Window:CreateTab("👑 Admin Tools")
     AdminTab:CreateButton({
         Name = "🔍 Dark Dex Explorer",
         Callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/memeenjoyer43/darkdex/refs/heads/main/script"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/peyton2465/Dex/master/out.lua"))()
         end,
     })
     AdminTab:CreateLabel("...Coming Soon...")
 
-    -- 📌 Credits
     local CreditTab = Window:CreateTab("📌 Credits")
     CreditTab:CreateLabel("Made by: SDVT Team")
+
+    Window:Toggle(true) -- mở sẵn
 end
 
 -- ==========================
@@ -200,120 +161,76 @@ end
 -- ==========================
 local function OpenFluentUI()
     local ok, FluentLib, usedUrl = TryLoadFluent()
-    if not ok then
-        Notify("❌ Fluent lỗi, mở Rayfield thay thế!", 4, Color3.fromRGB(255,60,60))
-        OpenRayfieldUI()
-        return
+    if not ok or not FluentLib then
+        Notify("❌ Fluent UI lỗi. Mở Rayfield thay thế...", 5, Color3.fromRGB(220,60,60))
+        return OpenRayfieldUI()
     end
 
-    -- Nút chữ UI
-    local ToggleGui = Instance.new("ScreenGui")
-    ToggleGui.Name = "FluentToggleUI"
-    ToggleGui.Parent = CoreGui
-
-    local Button = Instance.new("TextButton")
-    Button.Parent = ToggleGui
-    Button.Size = UDim2.new(0, 60, 0, 60)
-    Button.Position = UDim2.new(0.08, 0, 0.22, 0)
-    Button.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    Button.Text = "UI"
-    Button.TextColor3 = Color3.fromRGB(255,255,255)
-    Button.Font = Enum.Font.SourceSansBold
-    Button.TextScaled = true
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 15)
-    corner.Parent = Button
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(0,170,255)
-    stroke.Thickness = 2
-    stroke.Parent = Button
-
-    MakeDraggable(Button)
-
-    Button.MouseButton1Click:Connect(function()
-        VIM:SendKeyEvent(true, Enum.KeyCode.RightShift, false, game)
-        task.wait(0.05)
-        VIM:SendKeyEvent(false, Enum.KeyCode.RightShift, false, game)
-    end)
-
-    -- Fluent Window
-    local Window2 = FluentLib:CreateWindow({
-        Title = "🔥 All SDVT Executor (Fluent UI)",
+    local Window = FluentLib:CreateWindow({
+        Title = "🔥 All SDVT Executor Script (Fluent UI)",
         SubTitle = "By SDVT Team",
         TabWidth = 180
     })
 
     local Tabs = {
-        Main0 = Window2:AddTab({Title="🥭 BloxFruit"}),
-        Main1 = Window2:AddTab({Title="🌱 Grow A Garden"}),
-        Main2 = Window2:AddTab({Title="🌲 99 Nights"}),
-        Main3 = Window2:AddTab({Title="👑 Admin Tools"}),
-        Main4 = Window2:AddTab({Title="📌 Credits"})
+        Main0 = Window:AddTab({Title="🥭 BloxFruit"}),
+        Main1 = Window:AddTab({Title="🌱 Grow A Garden"}),
+        Main2 = Window:AddTab({Title="🌲 99 Nights in the Forest"}),
+        Main3 = Window:AddTab({Title="👑 Admin Tools"}),
+        Main4 = Window:AddTab({Title="📌 Credits"})
     }
 
-    -- 🥭 BloxFruit
     Tabs.Main0:AddButton({
-        Title="⚡ Speed Hub X",
-        Callback=function()
-            getgenv().script_key="BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK"
+        Title = "⚡ Speed Hub X (Auto Key)",
+        Callback = function()
+            getgenv().script_key = "BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK"
             loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
-            Notify("Đã chạy Speed Hub X", 2)
         end
     })
     Tabs.Main0:AddButton({
-        Title="🔥 Vxeze Hub",
-        Callback=function()
+        Title = "🔥 Vxeze Hub",
+        Callback = function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/Dex-Bear/Vxezehub/refs/heads/main/VxezeHubMain"))()
-            Notify("Đã chạy Vxeze Hub", 2)
         end
     })
     Tabs.Main0:AddButton({
-        Title="🌊 Tsuo Hub",
-        Callback=function()
+        Title = "🌊 Tsuo Hub",
+        Callback = function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/Tsuo7/TsuoHub/main/Tsuoscripts"))()
-            Notify("Đã chạy Tsuo Hub", 2)
         end
     })
 
-    -- 🌱 Grow A Garden
     Tabs.Main1:AddButton({
-        Title="⚡ Speed Hub X",
-        Callback=function()
-            getgenv().script_key="BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK"
+        Title = "⚡ Speed Hub X (Auto Key)",
+        Callback = function()
+            getgenv().script_key = "BRiKqnqHmXcWBYjXFVtxYBMkydfKjnbK"
             loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua"))()
-            Notify("Đã chạy Speed Hub X (Garden)", 2)
         end
     })
 
-    -- 🌲 99 Nights
     Tabs.Main2:AddButton({
-        Title="🌌 BONKHUB",
-        Callback=function()
+        Title = "🌌 BONKHUB (Key)",
+        Callback = function()
             local success = pcall(function()
                 loadstring(game:HttpGet("https://bonkhub.online/Loader.lua", true))()
             end)
             if not success then
                 loadstring(game:HttpGet("https://toonza555.github.io/BONKHUB-Loader/", true))()
             end
-            Notify("Đã chạy BONKHUB", 2)
         end
     })
 
-    -- 👑 Admin
     Tabs.Main3:AddButton({
-        Title="🔍 Dark Dex Explorer",
-        Callback=function()
+        Title = "🔍 Dark Dex Explorer",
+        Callback = function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/peyton2465/Dex/master/out.lua"))()
-            Notify("Đã mở Dark Dex", 2)
         end
     })
 
-    -- 📌 Credits
     Tabs.Main4:AddParagraph("Made by: SDVT Team")
 
-    Notify("✅ Fluent UI loaded ("..(usedUrl or "?")..")", 4)
+    Window:Toggle(true) -- mở sẵn
+    Notify("✅ Fluent UI đã load (url: "..(usedUrl or "?")..")", 4)
 end
 
 -- ==========================
@@ -354,22 +271,17 @@ FluentButton.Font = Enum.Font.SourceSansBold
 FluentButton.TextScaled = true
 FluentButton.Parent = Frame
 
+-- ==========================
 -- Callbacks
+-- ==========================
 RayButton.MouseButton1Click:Connect(function()
-    Notify("Mở Rayfield...", 2)
+    Notify("Mở Rayfield UI...", 2)
     VoteGui:Destroy()
     OpenRayfieldUI()
 end)
 
 FluentButton.MouseButton1Click:Connect(function()
-    Notify("Đang tải Fluent...", 2)
-    local ok = TryLoadFluent()
-    if ok then
-        VoteGui:Destroy()
-        OpenFluentUI()
-    else
-        Notify("❌ Fluent lỗi, fallback Rayfield!", 4, Color3.fromRGB(255,60,60))
-        VoteGui:Destroy()
-        OpenRayfieldUI()
-    end
+    Notify("Đang tải Fluent UI...", 2)
+    VoteGui:Destroy()
+    OpenFluentUI()
 end)
