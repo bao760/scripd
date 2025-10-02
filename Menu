@@ -96,6 +96,7 @@ AddSeedToggle("Carnivorous Plant Seed", "Carnivorous Plant")
 AddSeedToggle("Mr Carrot Seed", "Mr Carrot")
 AddSeedToggle("Tomatrio Seed", "Tomatrio")
 AddSeedToggle("Shroombino Seed", "Shroombino")
+AddSeedToggle("Cactus Seed", "Cactus")
 
 -- ========================
 -- Auto Collect (OFF mặc định)
