@@ -1,0 +1,199 @@
+-- 🌱 Plant Vs Brainrot | SDVT Hub (Rayfield Auto Run Seeds+Gear ON, Collect OFF) --
+
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+task.wait(2)
+
+-- Load Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- ========================
+-- Main Window
+-- ========================
+local Window = Rayfield:CreateWindow({
+    Name = "🌱 Plant Vs Brainrot",
+    LoadingTitle = "SDVT Hub",
+    LoadingSubtitle = "Auto Script",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "SDVT",
+        FileName = "SAVINGSDVTSCRIPT"
+    }
+})
+
+pcall(function()
+    Rayfield:LoadConfiguration()
+    warn("✅ Auto loaded SAVINGSDVTSCRIPT config!")
+end)
+
+task.spawn(function()
+    while task.wait(30) do
+        pcall(function()
+            Rayfield:SaveConfiguration()
+        end)
+    end
+end)
+
+-- Services
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Remotes = ReplicatedStorage:WaitForChild("Remotes", 10)
+
+-- ========================
+-- Info Tab
+-- ========================
+local InfoTab = Window:CreateTab("Info", "info")
+InfoTab:CreateParagraph({
+    Title = "Welcome!",
+    Content = "🌱 Plant Vs Brainrot\nMade by SDVT Team.\nEnjoy your script!"
+})
+
+-- ========================
+-- Auto Buy Seeds (ALL ON)
+-- ========================
+local ShopTab = Window:CreateTab("Auto Buy Seeds", "shopping-bag")
+local autoBuy = {}
+
+local function AddSeedToggle(seedName, displayName)
+    autoBuy[seedName] = true
+    ShopTab:CreateToggle({
+        Name = displayName,
+        CurrentValue = true,
+        Flag = "Seed_" .. seedName,
+        Callback = function(state)
+            autoBuy[seedName] = state
+            if state then
+                task.spawn(function()
+                    while autoBuy[seedName] do
+                        pcall(function()
+                            Remotes.BuyItem:FireServer(seedName)
+                        end)
+                        task.wait(0.001)
+                    end
+                end)
+            end
+        end
+    })
+
+    -- Auto bật khi load
+    task.spawn(function()
+        task.wait(1)
+        while autoBuy[seedName] do
+            pcall(function()
+                Remotes.BuyItem:FireServer(seedName)
+            end)
+            task.wait(0.001)
+        end
+    end)
+end
+
+AddSeedToggle("Watermelon Seed", "Watermelon")
+AddSeedToggle("Grape Seed", "Grape")
+AddSeedToggle("Cocotank Seed", "Cocotank")
+AddSeedToggle("Carnivorous Plant Seed", "Carnivorous Plant")
+AddSeedToggle("Mr Carrot Seed", "Mr Carrot")
+AddSeedToggle("Tomatrio Seed", "Tomatrio")
+AddSeedToggle("Shroombino Seed", "Shroombino")
+
+-- ========================
+-- Auto Collect (OFF mặc định)
+-- ========================
+local CollectTab = Window:CreateTab("Auto Collect", "dollar-sign")
+local collectDelay = 3
+CollectTab:CreateSlider({
+    Name = "Collect Delay (s)",
+    Range = {1, 10},
+    Increment = 1,
+    Suffix = "s",
+    CurrentValue = collectDelay,
+    Callback = function(v) collectDelay = v end
+})
+
+local autoCollect = false
+CollectTab:CreateToggle({
+    Name = "Auto Collect Money",
+    CurrentValue = false,
+    Flag = "AutoCollect",
+    Callback = function(state)
+        autoCollect = state
+        if state then
+            task.spawn(function()
+                while autoCollect do
+                    pcall(function()
+                        Remotes.EquipBestBrainrots:FireServer()
+                    end)
+                    task.wait(collectDelay)
+                end
+            end)
+        end
+    end
+})
+
+-- ========================
+-- Buy Gear (ALL ON)
+-- ========================
+local GearTab = Window:CreateTab("Buy Shop Gear", "shopping-cart")
+local autoBuyGear = {}
+
+local function AddGearToggle(gearName, displayName)
+    autoBuyGear[gearName] = true
+    GearTab:CreateToggle({
+        Name = displayName,
+        CurrentValue = true,
+        Flag = "Gear_" .. gearName,
+        Callback = function(state)
+            autoBuyGear[gearName] = state
+            if state then
+                task.spawn(function()
+                    while autoBuyGear[gearName] do
+                        pcall(function()
+                            Remotes.BuyGear:FireServer(gearName)
+                        end)
+                        task.wait(0.001)
+                    end
+                end)
+            end
+        end
+    })
+
+    -- Auto bật khi load
+    task.spawn(function()
+        task.wait(1)
+        while autoBuyGear[gearName] do
+            pcall(function()
+                Remotes.BuyGear:FireServer(gearName)
+            end)
+            task.wait(0.001)
+        end
+    end)
+end
+
+AddGearToggle("Water Bucket", "Water Bucket")
+AddGearToggle("Frost Grenade", "Frost Grenade")
+AddGearToggle("Banana Gun", "Banana Gun")
+AddGearToggle("Frost Blower", "Frost Blower")
+
+-- ========================
+-- Mobile Menu Button
+-- ========================
+local UIS = game:GetService("UserInputService")
+local mobileGui = Instance.new("ScreenGui")
+mobileGui.Name = "SDVT_MobileBtn"
+mobileGui.ResetOnSpawn = false
+mobileGui.Parent = player:WaitForChild("PlayerGui")
+
+local btn = Instance.new("TextButton")
+btn.Size = UDim2.new(0, 110, 0, 42)
+btn.Position = UDim2.new(0.02, 0, 0.82, 0)
+btn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+btn.Font = Enum.Font.SourceSansBold
+btn.TextSize = 18
+btn.Text = "🌱 Menu"
+btn.Parent = mobileGui
+
+btn.MouseButton1Click:Connect(function()
+    Rayfield:SetVisibility(not Rayfield:IsVisible())
+end)
