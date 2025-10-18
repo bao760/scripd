@@ -1,0 +1,304 @@
+-- // SDVT Shoot a Brainrot v4.6
+-- // by SDVT Studio ⚡
+-- // Auto TP Farm + Noclip + Bay cao 10 studs + Time Blood Checker
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+
+-------------------------------------------------
+-- 🌍 Cấu hình Rayfield
+-------------------------------------------------
+local Window = Rayfield:CreateWindow({
+	Name = "⚡ SDVT Shoot a Brainrot",
+	LoadingTitle = "SDVT Studio",
+	LoadingSubtitle = "Brainrot Edition 💀",
+	ConfigurationSaving = {
+		Enabled = true,
+		FolderName = "SDVT_Config",
+		FileName = "ShootABrainrot"
+	},
+	Discord = { Enabled = false },
+	KeySystem = false
+})
+
+-------------------------------------------------
+-- 📘 TAB 1: INFO + TỌA ĐỘ
+-------------------------------------------------
+local Tab1 = Window:CreateTab("📘 Info", 4483362458)
+
+Tab1:CreateParagraph({
+	Title = "SDVT Shoot a Brainrot",
+	Content = "💀 AutoSell + AutoTP + ServerHop + VIP Server + Copy Tọa độ!"
+})
+
+local currentPosition = Vector3.new(0, 0, 0)
+local coordBox
+
+Tab1:CreateButton({
+	Name = "📍 Set Tọa Độ Hiện Tại",
+	Callback = function()
+		local player = Players.LocalPlayer
+		if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			currentPosition = player.Character.HumanoidRootPart.Position
+			local posText = string.format("X: %.2f, Y: %.2f, Z: %.2f", currentPosition.X, currentPosition.Y, currentPosition.Z)
+			coordBox:Set(posText)
+			Rayfield:Notify({
+				Title = "Tọa Độ Đã Cập Nhật!",
+				Content = posText,
+				Duration = 3
+			})
+		else
+			Rayfield:Notify({
+				Title = "Lỗi",
+				Content = "⚠️ Không tìm thấy nhân vật!",
+				Duration = 3
+			})
+		end
+	end
+})
+
+coordBox = Tab1:CreateInput({
+	Name = "📌 Tọa độ hiện tại (click để copy)",
+	PlaceholderText = "Chưa có tọa độ...",
+	RemoveTextAfterFocusLost = false,
+	CurrentValue = "",
+	Flag = "CoordBox",
+	Callback = function(value)
+		if tostring(value):find("X:") then
+			setclipboard(value)
+			Rayfield:Notify({
+				Title = "📋 Sao chép thành công",
+				Content = "Đã copy tọa độ vào clipboard!",
+				Duration = 2
+			})
+		end
+	end
+})
+
+-------------------------------------------------
+-- 💰 TAB 2: FARM
+-------------------------------------------------
+local Tab2 = Window:CreateTab("💰 Farm", 4483362458)
+
+local AutoSell = false
+local Delay = 3
+local AutoTPFarm = false
+local NoclipConn
+local TPHeight = 10 -- độ cao bay (studs)
+
+Tab2:CreateToggle({
+	Name = "🌀 Auto Sell",
+	CurrentValue = false,
+	Flag = "AutoSell",
+	Callback = function(v)
+		AutoSell = v
+		if AutoSell then
+			task.spawn(function()
+				while AutoSell do
+					local args = { buffer.fromstring("\019") }
+					pcall(function()
+						game:GetService("ReplicatedStorage"):WaitForChild("ByteNetReliable"):FireServer(unpack(args))
+					end)
+					task.wait(Delay)
+				end
+			end)
+		end
+	end
+})
+
+Tab2:CreateSlider({
+	Name = "⏱ Delay (giây)",
+	Range = {1, 15},
+	Increment = 1,
+	Suffix = "s",
+	CurrentValue = 3,
+	Flag = "DelayValue",
+	Callback = function(v)
+		Delay = v
+	end
+})
+
+Tab2:CreateToggle({
+	Name = "🚀 Auto TP Farm (mỗi 30s + Noclip + Bay)",
+	CurrentValue = false,
+	Flag = "AutoTPFarm",
+	Callback = function(v)
+		AutoTPFarm = v
+		if v then
+			Rayfield:Notify({
+				Title = "Auto TP Farm",
+				Content = "🛰 Đang bật Auto TP + Noclip + Bay cao 10 studs...",
+				Duration = 3
+			})
+
+			NoclipConn = RunService.Stepped:Connect(function()
+				pcall(function()
+					local char = Players.LocalPlayer.Character
+					if char then
+						for _, part in pairs(char:GetDescendants()) do
+							if part:IsA("BasePart") then
+								part.CanCollide = false
+							end
+						end
+					end
+				end)
+			end)
+
+			task.spawn(function()
+				while AutoTPFarm do
+					pcall(function()
+						local player = Players.LocalPlayer
+						if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+							local target = Vector3.new(224.67, 7.00 + TPHeight, 104.10)
+							player.Character.HumanoidRootPart.CFrame = CFrame.new(target)
+						end
+					end)
+					task.wait(30)
+				end
+			end)
+		else
+			if NoclipConn then
+				NoclipConn:Disconnect()
+				NoclipConn = nil
+			end
+			Rayfield:Notify({
+				Title = "Auto TP Farm",
+				Content = "⛔ Đã tắt Auto TP + Noclip!",
+				Duration = 3
+			})
+		end
+	end
+})
+
+-------------------------------------------------
+-- 🌐 TAB 3: SERVER
+-------------------------------------------------
+local Tab3 = Window:CreateTab("🌐 Server", 4483362458)
+
+Tab3:CreateButton({
+	Name = "🔒 Tạo Server VIP (Private)",
+	Callback = function()
+		Rayfield:Notify({
+			Title = "Server VIP",
+			Content = "🧩 Đang tạo server riêng...",
+			Duration = 3
+		})
+		task.spawn(function()
+			local success, code = pcall(function()
+				return TeleportService:ReserveServer(game.PlaceId)
+			end)
+			if code then
+				setclipboard(code)
+				Rayfield:Notify({
+					Title = "Server VIP",
+					Content = "✅ Tạo thành công, code đã sao chép!",
+					Duration = 3
+				})
+				task.wait(1)
+				TeleportService:TeleportToPrivateServer(game.PlaceId, code, {Players.LocalPlayer})
+			else
+				Rayfield:Notify({
+					Title = "Server VIP",
+					Content = "⚠️ Không thể tạo Server VIP!",
+					Duration = 4
+				})
+			end
+		end)
+	end
+})
+
+Tab3:CreateButton({
+	Name = "🌍 Hop Server 0 Player",
+	Callback = function()
+		Rayfield:Notify({
+			Title = "Server Hop",
+			Content = "🔎 Đang tìm server ít người...",
+			Duration = 3
+		})
+		task.spawn(function()
+			local Place = game.PlaceId
+			local found
+			local cursor = ""
+			local lowest = math.huge
+			repeat
+				local url = ("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100%s")
+					:format(Place, cursor ~= "" and "&cursor=" .. cursor or "")
+				local ok, data = pcall(function()
+					return HttpService:JSONDecode(game:HttpGet(url))
+				end)
+				if ok and data and data.data then
+					for _, s in ipairs(data.data) do
+						if s.playing < lowest and s.id ~= game.JobId then
+							lowest = s.playing
+							found = s.id
+							if lowest < 2 then break end
+						end
+					end
+					cursor = data.nextPageCursor or ""
+				else
+					cursor = nil
+				end
+				task.wait(0.2)
+			until found or not cursor
+
+			if found then
+				Rayfield:Notify({
+					Title = "Server Hop",
+					Content = "✅ Dịch chuyển đến server trống...",
+					Duration = 3
+				})
+				TeleportService:TeleportToPlaceInstance(Place, found, Players.LocalPlayer)
+			else
+				Rayfield:Notify({
+					Title = "Server Hop",
+					Content = "⚠️ Không tìm thấy server trống!",
+					Duration = 4
+				})
+			end
+		end)
+	end
+})
+
+-------------------------------------------------
+-- ⏰ TAB 4: CHECK TIME BLOOD (auto update mỗi giây)
+-------------------------------------------------
+local Tab4 = Window:CreateTab("⏰ Check Time Blood", 4483362458)
+local timeLabel = Tab4:CreateParagraph({
+	Title = "🩸 Time Blood",
+	Content = "Đang tải..."
+})
+
+task.spawn(function()
+	while task.wait(1) do
+		pcall(function()
+			local gui = Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
+			if not gui then
+				timeLabel:Set("⚠️ Không tìm thấy PlayerGui!")
+				return
+			end
+
+			local foundLabel
+			for _, lbl in pairs(gui:GetDescendants()) do
+				if lbl:IsA("TextLabel") and lbl.Visible and lbl.Parent and lbl.Parent:IsA("GuiObject") then
+					local pos = lbl.Position
+					if math.abs(pos.X.Scale - 0.498268247) < 0.002 and math.abs(pos.Y.Scale - 0.716611087) < 0.002 then
+						foundLabel = lbl
+						break
+					end
+				end
+			end
+
+			if foundLabel and foundLabel.Text and foundLabel.Text ~= "" then
+				timeLabel:Set("🩸 Time Blood Hiện Tại: " .. tostring(foundLabel.Text))
+			else
+				timeLabel:Set("⚠️ Không tìm thấy hoặc chưa có Time Blood!")
+			end
+		end)
+	end
+end)
+
+-------------------------------------------------
+Rayfield:LoadConfiguration()
