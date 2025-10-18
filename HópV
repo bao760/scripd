@@ -1,0 +1,137 @@
+-- ⚡ Rey Menu - Server Hop + Job ID Joiner
+-- Bản mở rộng với Tab "Job ID"
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local LocalPlayer = Players.LocalPlayer
+
+local PLACE_ID = game.PlaceId
+local API_URL = "https://games.roblox.com/v1/games/".. PLACE_ID .."/servers/Public?sortOrder=Asc&limit=100"
+
+-- ⚙️ UI
+local Window = Rayfield:CreateWindow({
+    Name = "⚡ Rey Menu ⚡",
+    LoadingTitle = "Rey Hub",
+    LoadingSubtitle = "Server Tools",
+    ConfigurationSaving = {
+        Enabled = true,
+        FileName = "ReyMenu"
+    }
+})
+
+-- 🧭 TAB 1: INFO
+local InfoTab = Window:CreateTab("Info", 4483362458)
+InfoTab:CreateLabel("👤 Tên: " .. LocalPlayer.Name)
+local lblCount = InfoTab:CreateLabel("👥 Số người hiện tại: " .. #Players:GetPlayers())
+task.spawn(function()
+    while task.wait(2) do
+        lblCount:Set("👥 Số người hiện tại: " .. #Players:GetPlayers())
+    end
+end)
+
+-- 🌐 TAB 2: SERVER HOP
+local ServerTab = Window:CreateTab("Server", 4483362458)
+ServerTab:CreateSection("🔄 Hop Server Low (1-2 người)")
+local statusLabel = ServerTab:CreateLabel("Status: Sẵn sàng ✅")
+
+local function FindLowServer()
+    local cursor = nil
+    while true do
+        local url = API_URL
+        if cursor then
+            url = url .. "&cursor=" .. HttpService:UrlEncode(cursor)
+        end
+
+        local success, body = pcall(function()
+            return game:HttpGet(url)
+        end)
+
+        if success then
+            local data = HttpService:JSONDecode(body)
+            for _, server in ipairs(data.data) do
+                if tonumber(server.playing) and server.playing <= 2 and server.id ~= game.JobId then
+                    return server
+                end
+            end
+            cursor = data.nextPageCursor
+            if not cursor then break end
+        end
+        task.wait(0.2)
+    end
+    return nil
+end
+
+local function Notify(title, desc, time)
+    Rayfield:Notify({
+        Title = title,
+        Content = desc,
+        Duration = time or 4
+    })
+end
+
+ServerTab:CreateButton({
+    Name = "🌐 Hop Server Low (≤2 người)",
+    Callback = function()
+        statusLabel:Set("🔎 Đang tìm server ít người hơn...")
+        Notify("Server Hop", "Đang quét server có ≤ 2 người...", 4)
+
+        task.spawn(function()
+            local server
+            repeat
+                server = FindLowServer()
+                task.wait(1)
+            until server ~= nil
+
+            if server then
+                statusLabel:Set("✅ Đã tìm thấy server có ".. tostring(server.playing) .." người, đang dịch chuyển...")
+                Notify("Thành công 🎉", "Đang chuyển sang server ít người!", 5)
+
+                TeleportService:TeleportToPlaceInstance(PLACE_ID, server.id, LocalPlayer)
+            else
+                statusLabel:Set("❌ Không tìm thấy server phù hợp")
+            end
+        end)
+    end
+})
+
+-- 🧩 TAB 3: JOB ID
+local JobTab = Window:CreateTab("Job ID", 4483362458)
+JobTab:CreateSection("🪪 Quản lý Job ID")
+
+-- ✅ Input để nhập Job ID và join
+JobTab:CreateInput({
+    Name = "Nhập Job ID để Join",
+    PlaceholderText = "Nhập Job ID vào đây...",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(jobId)
+        if jobId and jobId ~= "" then
+            Notify("Đang dịch chuyển 🌐", "Đang vào Job ID: ".. jobId, 4)
+            local success, err = pcall(function()
+                TeleportService:TeleportToPlaceInstance(PLACE_ID, jobId, LocalPlayer)
+            end)
+            if not success then
+                Notify("❌ Lỗi", "Không thể join Job ID này!", 5)
+            end
+        else
+            Notify("⚠️ Cảnh báo", "Bạn chưa nhập Job ID!", 4)
+        end
+    end
+})
+
+-- 📋 Nút Copy Job ID hiện tại
+JobTab:CreateButton({
+    Name = "📋 Copy Job ID hiện tại",
+    Callback = function()
+        if setclipboard then
+            setclipboard(game.JobId)
+            Notify("✅ Copied", "Đã sao chép Job ID hiện tại!", 3)
+        else
+            Notify("⚠️ Không hỗ trợ", "Trình chạy không cho phép copy clipboard!", 5)
+        end
+    end
+})
+
+-- 🧾 Hiện Job ID hiện tại
+JobTab:CreateLabel("🔖 Job ID hiện tại: " .. game.JobId)
