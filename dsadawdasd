@@ -1,0 +1,113 @@
+-- 🌌 SDVT SAB | Final Stable Build
+-- ✅ Tương thích mọi executor | Không cần lưu file | Auto copy tọa độ
+
+-- Tải Rayfield UI
+local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
+
+-- ⚙️ Tạo cửa sổ chính
+local Window = Rayfield:CreateWindow({
+    Name = "🌌 SDVT SAB",
+    LoadingTitle = "SDVT Hub",
+    LoadingSubtitle = "Auto Script vFinal",
+})
+
+-- ============ TAB 1: INFO ============
+local InfoTab = Window:CreateTab("📄 Info", 4483362458)
+InfoTab:CreateParagraph({
+    Title = "Giới thiệu",
+    Content = "Xin chào! Đây là SDVT SAB Script Hub.\nTự động hỗ trợ lấy tọa độ, di chuyển và quản lý sự kiện trong game.",
+})
+
+InfoTab:CreateParagraph({
+    Title = "Người tạo",
+    Content = "🧠 Made by SDVT Dev | 2025",
+})
+
+-- ============ TAB 2: MAIN ============
+local MainTab = Window:CreateTab("🧭 Main", 4483362458)
+local plr = game.Players.LocalPlayer
+
+MainTab:CreateButton({
+    Name = "📍 Lấy tọa độ hiện tại",
+    Callback = function()
+        local pos = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+        if pos then
+            local coords = string.format("X: %.2f, Y: %.2f, Z: %.2f", pos.Position.X, pos.Position.Y, pos.Position.Z)
+            setclipboard(coords)
+            Rayfield:Notify({
+                Title = "✅ Tọa độ đã sao chép!",
+                Content = coords,
+                Duration = 4
+            })
+        else
+            Rayfield:Notify({
+                Title = "⚠️ Lỗi",
+                Content = "Không tìm thấy nhân vật!",
+                Duration = 4
+            })
+        end
+    end,
+})
+
+MainTab:CreateParagraph({
+    Title = "📌 Hướng dẫn",
+    Content = "Nhấn nút 'Lấy tọa độ hiện tại' để sao chép vị trí bạn đang đứng.\nKhông cần bật menu phụ, script tự động copy vào clipboard."
+})
+
+-- ============ TAB 3: EVENT ============
+local EventTab = Window:CreateTab("🎃 Event", 4483362458)
+
+EventTab:CreateParagraph({
+    Title = "👻 Sự kiện Graveyard",
+    Content = "Di chuyển đến khu vực đặc biệt trong game (Graveyard)."
+})
+
+EventTab:CreateButton({
+    Name = "🚪 Go #1 (Graveyard)",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+            Rayfield:Notify({
+                Title = "⚠️ Lỗi",
+                Content = "Không tìm thấy nhân vật!",
+                Duration = 4
+            })
+            return
+        end
+        
+        -- Vị trí mục tiêu
+        local destination = Vector3.new(-373.54, -6.99, -12.76)
+        local HRP = player.Character.HumanoidRootPart
+        
+        -- Di chuyển bằng tween để tránh phát hiện teleport
+        local TweenService = game:GetService("TweenService")
+        local tween = TweenService:Create(HRP, TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = CFrame.new(destination)})
+        tween:Play()
+
+        Rayfield:Notify({
+            Title = "🧭 Đang di chuyển...",
+            Content = "Đến Graveyard...",
+            Duration = 4
+        })
+
+        tween.Completed:Connect(function()
+            Rayfield:Notify({
+                Title = "✅ Đã đến nơi!",
+                Content = "Bạn đã đến Graveyard.",
+                Duration = 4
+            })
+        end)
+    end,
+})
+
+EventTab:CreateParagraph({
+    Title = "💡 Ghi chú",
+    Content = "Di chuyển bằng tween mượt, an toàn và ít bị phát hiện.\nCác điểm khác sẽ được cập nhật ở bản sau."
+})
+
+-- ============ KẾT THÚC ============
+Rayfield:Notify({
+    Title = "🎉 SDVT SAB Loaded",
+    Content = "Script đã sẵn sàng sử dụng!",
+    Duration = 5
+})
