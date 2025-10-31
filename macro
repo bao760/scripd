@@ -16,6 +16,7 @@ local Window = Rayfield:CreateWindow({
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
+local hrp = character:WaitForChild("HumanoidRootPart")
 
 -- ========================
 -- 📜 TAB 1: INFO
@@ -33,24 +34,29 @@ InfoTab:CreateLabel("Mô tả: Đây là Script Hub SDVT - hỗ trợ auto & ti�
 local MainTab = Window:CreateTab("🧭 Main", 4483362458)
 MainTab:CreateSection("📌 Hệ thống Auto")
 
--- ⚙️ Auto Buy Noobini Pizzanini
 local autoBuy = false
 
+-- Hàm tìm model Noobini Pizzanini
 local function findNoobini()
 	for _, obj in ipairs(workspace:GetDescendants()) do
-		if obj:IsA("Model") and obj.Name == "Noobini Pizzanini" then
+		if obj:IsA("Model") and obj.Name == "Noobini Pizzanini" and obj:FindFirstChild("HumanoidRootPart") then
 			return obj
 		end
 	end
 end
 
-local function simulateKeyPress(key)
-	local VirtualInputManager = game:GetService("VirtualInputManager")
-	VirtualInputManager:SendKeyEvent(true, key, false, game)
-	task.wait(0.1)
-	VirtualInputManager:SendKeyEvent(false, key, false, game)
+-- Hàm kích hoạt E (ProximityPrompt)
+local function triggerPrompt(obj)
+	for _, prompt in ipairs(obj:GetDescendants()) do
+		if prompt:IsA("ProximityPrompt") then
+			fireproximityprompt(prompt)
+			return true
+		end
+	end
+	return false
 end
 
+-- Toggle Auto Buy
 MainTab:CreateToggle({
 	Name = "🍕 Auto Buy Noobini Pizzanini",
 	CurrentValue = false,
@@ -60,26 +66,27 @@ MainTab:CreateToggle({
 		if value then
 			Rayfield:Notify({
 				Title = "✅ Auto Buy Bắt đầu",
-				Content = "Đang tự tìm và mua Noobini Pizzanini...",
+				Content = "Đang tìm và mua Noobini Pizzanini...",
 				Duration = 3
 			})
 			task.spawn(function()
 				while autoBuy do
 					local npc = findNoobini()
-					if npc and npc:FindFirstChild("HumanoidRootPart") then
-						local targetPos = npc.HumanoidRootPart.Position
-						local distance = (character:WaitForChild("HumanoidRootPart").Position - targetPos).Magnitude
+					if npc then
+						local npcHRP = npc:FindFirstChild("HumanoidRootPart")
+						if npcHRP then
+							local distance = (hrp.Position - npcHRP.Position).Magnitude
 
-						if distance > 8 then
-							humanoid:MoveTo(targetPos)
-							humanoid.MoveToFinished:Wait()
-						else
-							-- Khi đã đủ gần → nhấn phím E để mua
-							simulateKeyPress(Enum.KeyCode.E)
-							task.wait(3) -- đợi 3 giây giữa các lần mua
+							if distance > 7 then
+								humanoid:MoveTo(npcHRP.Position)
+								humanoid.MoveToFinished:Wait()
+							else
+								triggerPrompt(npc)
+								task.wait(3)
+							end
 						end
 					else
-						task.wait(1) -- nếu chưa tìm thấy NPC
+						task.wait(1)
 					end
 					task.wait(0.2)
 				end
