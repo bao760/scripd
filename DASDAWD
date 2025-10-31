@@ -1,289 +1,180 @@
--- SDVT SAB Safe Auto-Move + Manual Tool Activation
--- Uses PathfindingService + Humanoid:MoveTo for movement (no tween teleport)
--- When arriving at a point, shows a big UI button "Kích hoạt Tool 2" for the user to press manually.
--- Does NOT auto-click, does NOT simulate input. UI button performs Activate() only when clicked.
+-- 🌌 SDVT SAB | Safe Auto-Move & Tool Slot 2 Hotkey
+-- Made by ChatGPT (for SDVT)
+-- Uses Pathfinding, safe movement, manual activation (no automation)
+-- Works with Rayfield Sirius UI
 
--- Load Rayfield (classic)
-local ok, Rayfield = pcall(function() return loadstring(game:HttpGet('https://sirius.menu/rayfield'))() end)
+-- 🧩 Load Rayfield
+local ok, Rayfield = pcall(function()
+	return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+end)
+
 if not ok or not Rayfield then
-    warn("Rayfield load failed.")
-    return
+	warn("⚠️ Không thể tải Rayfield.")
+	return
 end
 
 local Players = game:GetService("Players")
 local PathfindingService = game:GetService("PathfindingService")
+local ContextActionService = game:GetService("ContextActionService")
 local player = Players.LocalPlayer
 
--- Window
+-- 🌌 Window
 local Window = Rayfield:CreateWindow({
-    Name = "SDVT SAB - Safe AutoMove",
-    LoadingTitle = "SDVT Hub",
-    LoadingSubtitle = "Safe Auto-Move + Manual Tool Use"
+	Name = "SDVT SAB",
+	LoadingTitle = "SDVT Hub",
+	LoadingSubtitle = "Auto Script",
+	ConfigurationSaving = {
+		Enabled = true,
+		FolderName = "SDVT",
+		FileName = "SDVTSAB"
+	}
 })
 
--- Tabs
+-- ========================
+-- 📜 TAB 1: INFO
+-- ========================
 local InfoTab = Window:CreateTab("📜 Info", 4483362458)
+InfoTab:CreateSection("👤 Người Dùng")
+InfoTab:CreateLabel("Tên: " .. player.Name)
+InfoTab:CreateLabel("UserID: " .. player.UserId)
+InfoTab:CreateLabel("GameID: " .. game.PlaceId)
+InfoTab:CreateLabel("Mô tả: SDVT Hub Auto Script - phiên bản an toàn.")
+
+-- ========================
+-- 📍 TAB 2: MAIN
+-- ========================
 local MainTab = Window:CreateTab("🧭 Main", 4483362458)
-local EventTab = Window:CreateTab("🎯 Event", 4483362458)
-local ControlTab = Window:CreateTab("⚙️ Control", 4483362458)
+MainTab:CreateSection("📌 Tọa độ hiện tại")
 
--- Info
-InfoTab:CreateSection("👤 Player")
-InfoTab:CreateLabel("Name: " .. tostring(player.Name))
-InfoTab:CreateLabel("UserId: " .. tostring(player.UserId))
-InfoTab:CreateLabel("GameId: " .. tostring(game.PlaceId))
+local coordLabel = MainTab:CreateLabel("Tọa độ: Chưa lấy")
 
--- Points (your coords)
+local function getPos()
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hrp = char:WaitForChild("HumanoidRootPart")
+	return hrp.Position
+end
+
+MainTab:CreateButton({
+	Name = "📍 Lấy tọa độ + Copy",
+	Callback = function()
+		local pos = getPos()
+		local coord = string.format("X: %.2f, Y: %.2f, Z: %.2f", pos.X, pos.Y, pos.Z)
+		coordLabel:Set("Tọa độ: " .. coord)
+		setclipboard(coord)
+		Rayfield:Notify({
+			Title = "✅ Đã sao chép!",
+			Content = coord,
+			Duration = 3
+		})
+	end
+})
+
+-- ========================
+-- 🎯 TAB 3: EVENT
+-- ========================
+local EventTab = Window:CreateTab("🎯 Event ESP", 4483362458)
+EventTab:CreateSection("🏁 Di chuyển tự nhiên (Pathfinding)")
+
+-- Các điểm đến
 local GO_POINTS = {
-    Vector3.new(-325.63, -6.39, 58.34),  -- Go #1
-    Vector3.new(-377.17, -6.98, 183.61), -- Go #2
-    Vector3.new(-320.29, -6.99, 171.93)  -- Go #3
+	Vector3.new(-325.63, -6.39, 58.34),   -- Go #1
+	Vector3.new(-377.17, -6.98, 183.61),  -- Go #2
+	Vector3.new(-320.29, -6.99, 171.93)   -- Go #3
 }
 
--- Utility: draw simple neon path (visual only)
-local function drawPath(waypoints)
-    local parts = {}
-    for i = 1, #waypoints-1 do
-        local p1 = waypoints[i].Position
-        local p2 = waypoints[i+1].Position
-        local dist = (p1 - p2).Magnitude
-        local mid = (p1 + p2) / 2
-        local part = Instance.new("Part")
-        part.Anchored = true
-        part.CanCollide = false
-        part.Material = Enum.Material.Neon
-        part.Color = Color3.fromRGB(0, 200, 120)
-        part.Size = Vector3.new(0.2, 0.2, math.max(0.4, dist))
-        part.CFrame = CFrame.new(mid, p2) * CFrame.new(0, 0, -dist/2)
-        part.Transparency = 0.2
-        part.Parent = workspace
-        table.insert(parts, part)
-    end
-    return parts
+-- Di chuyển an toàn (tránh tường)
+local function SafeMoveTo(destination)
+	local char = player.Character or player.CharacterAdded:Wait()
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not hrp then
+		return Rayfield:Notify({Title="⚠️ Lỗi", Content="Không tìm thấy nhân vật.", Duration=3})
+	end
+
+	local path = PathfindingService:CreatePath({AgentRadius=2, AgentHeight=5, AgentCanJump=true})
+	path:ComputeAsync(hrp.Position, destination)
+
+	if path.Status ~= Enum.PathStatus.Success then
+		return Rayfield:Notify({Title="❌ Lỗi đường đi", Content="Không thể tạo đường hợp lệ!", Duration=3})
+	end
+
+	local waypoints = path:GetWaypoints()
+	for _, wp in ipairs(waypoints) do
+		if wp.Action == Enum.PathWaypointAction.Jump then
+			humanoid.Jump = true
+		end
+		humanoid:MoveTo(wp.Position)
+		humanoid.MoveToFinished:Wait()
+	end
+	Rayfield:Notify({Title="✅ Đã đến", Content="Bạn đã đến điểm được chọn.", Duration=3})
 end
 
-local function clearParts(parts)
-    for _, p in ipairs(parts) do
-        if p and p.Parent then p:Destroy() end
-    end
-end
-
--- SafeMove implementation (pathfinding + MoveTo) returns true if arrived
-local function SafeMoveTo(destination, timeoutTime)
-    timeoutTime = timeoutTime or 18 -- seconds per waypoint fallback
-    local char = player.Character or player.CharacterAdded:Wait()
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not humanoid or not hrp then
-        Rayfield:Notify({Title="⚠️ Lỗi", Content="Không tìm thấy Humanoid hoặc HRP.", Duration=3})
-        return false
-    end
-
-    local path = PathfindingService:CreatePath({
-        AgentRadius = 2,
-        AgentHeight = 5,
-        AgentCanJump = true,
-        AgentCanClimb = true
-    })
-    path:ComputeAsync(hrp.Position, destination)
-    if path.Status ~= Enum.PathStatus.Success then
-        Rayfield:Notify({Title="⚠️ Lỗi đường đi", Content="Không tìm được lộ trình an toàn.", Duration=3})
-        return false
-    end
-
-    local waypoints = path:GetWaypoints()
-    local visuals = drawPath(waypoints)
-
-    for _, wp in ipairs(waypoints) do
-        if wp.Action == Enum.PathWaypointAction.Jump then
-            humanoid.Jump = true
-        end
-        local reached = false
-        local conn = humanoid.MoveToFinished:Connect(function(success) if success then reached = true end end)
-        humanoid:MoveTo(wp.Position)
-        local start = tick()
-        while not reached and (tick() - start) < timeoutTime do
-            task.wait(0.12)
-        end
-        if conn then conn:Disconnect() end
-        if not reached then
-            clearParts(visuals)
-            Rayfield:Notify({Title="⚠️ Tắc đường", Content="Không thể tiếp cận waypoint, dừng.", Duration=3})
-            return false
-        end
-    end
-
-    clearParts(visuals)
-    return true
-end
-
--- Creates a big ScreenGui button that user must press to Activate tool in slot 2
-local function createActivateButton(onClicked)
-    -- place in CoreGui to ensure visible (some executors may restrict CoreGui; fallback to PlayerGui)
-    local parentGui = nil
-    if pcall(function() return game:GetService("CoreGui") end) then
-        parentGui = game:GetService("CoreGui")
-    else
-        parentGui = player:WaitForChild("PlayerGui")
-    end
-
-    -- Remove existing if present
-    local existing = parentGui:FindFirstChild("SDVT_ActivateGui")
-    if existing then existing:Destroy() end
-
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "SDVT_ActivateGui"
-    screenGui.ResetOnSpawn = false
-    screenGui.Parent = parentGui
-
-    local btn = Instance.new("TextButton")
-    btn.Name = "ActivateToolBtn"
-    btn.Size = UDim2.new(0, 420, 0, 90)
-    btn.Position = UDim2.new(0.5, -210, 0.85, 0)
-    btn.AnchorPoint = Vector2.new(0.5, 0.5)
-    btn.Text = "🔴 KÍCH HOẠT TOOL SLOT 2 (NHẤN TAY ĐỂ THỰC HIỆN)"
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 22
-    btn.TextWrapped = true
-    btn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.Parent = screenGui
-
-    local cancelled = false
-    local conn
-    conn = btn.MouseButton1Click:Connect(function()
-        -- disable button to prevent multi-clicks while action runs
-        btn.Active = false
-        btn.AutoButtonColor = false
-        btn.BackgroundColor3 = Color3.fromRGB(120,120,120)
-        pcall(onClicked)
-        task.wait(0.6)
-        if conn then conn:Disconnect() end
-        screenGui:Destroy()
-    end)
-
-    return screenGui
-end
-
--- Tries to equip tool from backpack slot 2 (best-effort), then call Activate() when user clicks the UI button
--- Note: This is manual activation — user must click the UI button to run this function.
-local function equipAndAttemptActivateSlot2()
-    local backpack = player:FindFirstChildOfClass("Backpack")
-    local char = player.Character
-    if not backpack then
-        Rayfield:Notify({Title="⚠️ Lỗi", Content="Không thấy Backpack.", Duration=3})
-        return
-    end
-
-    -- Try to find tool in "slot 2" - Roblox doesn't expose slot index reliably;
-    -- we'll attempt to select the second tool in Backpack:FindFirstChildOfClass order
-    local tools = {}
-    for _, item in ipairs(backpack:GetChildren()) do
-        if item:IsA("Tool") then table.insert(tools, item) end
-    end
-
-    local toolToUse = nil
-    if #tools >= 2 then
-        toolToUse = tools[2]
-    elseif #tools == 1 then
-        toolToUse = tools[1] -- fallback to first
-    else
-        -- also check character for tools
-        for _, item in ipairs(char:GetChildren()) do
-            if item:IsA("Tool") then toolToUse = item break end
-        end
-    end
-
-    if not toolToUse then
-        Rayfield:Notify({Title="⚠️ Tool không tìm thấy", Content="Không tìm thấy Tool trong Backpack/Character.", Duration=4})
-        return
-    end
-
-    -- equip tool (move to character)
-    pcall(function()
-        toolToUse.Parent = char
-    end)
-
-    -- Try to call Activate() (some tools support it server-side; many require mouse click)
-    local success, err = pcall(function()
-        if toolToUse and toolToUse.Activate then
-            toolToUse:Activate()
-        end
-    end)
-    if success then
-        Rayfield:Notify({Title="🔔 Tool", Content="Đã gọi Activate() (nếu API cho phép). Nếu tool cần click, hãy bấm chuột.", Duration=4})
-    else
-        Rayfield:Notify({Title="⚠️ Tool", Content="Gọi Activate() thất bại: "..tostring(err), Duration=4})
-    end
-end
-
--- Create per-point Go buttons in EventTab: auto-move then show big activation button for manual press
+-- Tạo nút di chuyển
 for i, pt in ipairs(GO_POINTS) do
-    EventTab:CreateButton({
-        Name = ("🪦 Go #%d (Tự đi an toàn)"):format(i),
-        Callback = function()
-            task.spawn(function()
-                Rayfield:Notify({Title="🧭 Bắt đầu", Content=("Di chuyển tới điểm %d..."):format(i), Duration=3})
-                local ok = SafeMoveTo(pt)
-                if ok then
-                    Rayfield:Notify({Title="✅ Đã đến", Content=("Bạn đã tới điểm %d. Hãy nhấn nút Kích hoạt Tool xuất hiện để dùng tool 2."):format(i), Duration=5})
-                    -- show activate button; user must click it
-                    createActivateButton(function() equipAndAttemptActivateSlot2() end)
-                else
-                    Rayfield:Notify({Title="❌ Thất bại", Content=("Không thể đến điểm %d, kiểm tra vị trí hoặc di chuyển thủ công."):format(i), Duration=4})
-                end
-            end)
-        end
-    })
+	EventTab:CreateButton({
+		Name = "🪦 Go #" .. i,
+		Callback = function()
+			SafeMoveTo(pt)
+		end
+	})
 end
 
--- Control tab: option to run sequence automatically (move sequence only). Activation still requires user click per point.
-local runSequenceToggle = ControlTab:CreateToggle({
-    Name = "Chạy tuần tự tự động (chỉ di chuyển)",
-    Current = false,
-    Flag = "RunSequenceToggle"
-})
+-- ========================
+-- 🛠 TAB 4: CONTROL / HOTKEY
+-- ========================
+local ControlTab = Window:CreateTab("⚙️ Control", 4483362458)
+ControlTab:CreateSection("⌨️ Phím Tắt Tool Slot 2")
 
-ControlTab:CreateButton({
-    Name = "▶ Bắt đầu sequence (Go1->Go2->Go3) (Yêu cầu xác nhận)",
-    Callback = function()
-        if not runSequenceToggle and not runSequenceToggle.Current then
-            -- If toggle exists but false, warn
-            Rayfield:Notify({Title="⚠️ Chưa bật toggle", Content="Hãy bật 'Chạy tuần tự tự động' trước khi chạy.", Duration=4})
-            return
-        end
-        task.spawn(function()
-            Rayfield:Notify({Title="▶ Sequence", Content="Bắt đầu chạy tuần tự di chuyển (Activate vẫn bằng tay).", Duration=3})
-            for idx,pt in ipairs(GO_POINTS) do
-                local ok = SafeMoveTo(pt)
-                if ok then
-                    Rayfield:Notify({Title="✅ Đã đến", Content=("Đã đến điểm %d. Nhấn nút 'Kích hoạt Tool 2' để thực hiện thao tác (bắt buộc)."):format(idx), Duration=6})
-                    createActivateButton(function() equipAndAttemptActivateSlot2() end)
-                    -- wait for user to press button (we'll wait up to a timeout)
-                    local waited = 0
-                    local pressed = false
-                    -- simple method: poll for the GUI existence to be gone (button destroys itself after click)
-                    while waited < 60 and player and player.Character do
-                        local gui = nil
-                        pcall(function() gui = (game:GetService("CoreGui"):FindFirstChild("SDVT_ActivateGui") or player.PlayerGui:FindFirstChild("SDVT_ActivateGui")) end)
-                        if not gui then
-                            pressed = true
-                            break
-                        end
-                        task.wait(1)
-                        waited = waited + 1
-                    end
-                    -- wait 18s pause as you requested previously
-                    task.wait(18)
-                else
-                    Rayfield:Notify({Title="⚠️ Sequence halted", Content="Sequence dừng do không thể tiếp cận điểm.", Duration=4})
-                    break
-                end
-            end
-            Rayfield:Notify({Title="▶ Sequence", Content="Sequence di chuyển hoàn tất (hoặc bị dừng).", Duration=4})
-        end)
-    end
-})
+-- Hàm equip tool slot 2 (khi bạn NHẤN phím 2 thật)
+local function equipAndActivateSlot2()
+	local backpack = player:FindFirstChildOfClass("Backpack")
+	local char = player.Character
+	if not backpack or not char then
+		return Rayfield:Notify({Title="⚠️ Lỗi", Content="Không tìm thấy Backpack hoặc nhân vật.", Duration=3})
+	end
 
--- Final notify
-Rayfield:Notify({Title="SDVT SAB Ready", Content="AutoMove loaded. Tool activation requires manual click for safety.", Duration=5})
+	-- Lấy tool thứ 2 trong Backpack
+	local tools = {}
+	for _, item in ipairs(backpack:GetChildren()) do
+		if item:IsA("Tool") then table.insert(tools, item) end
+	end
+
+	local tool = tools[2] or tools[1]
+	if not tool then
+		return Rayfield:Notify({Title="⚠️ Tool", Content="Không có tool nào trong slot 2.", Duration=3})
+	end
+
+	tool.Parent = char
+	task.wait(0.3)
+	pcall(function() tool:Activate() end)
+
+	Rayfield:Notify({
+		Title = "🛠 Tool Slot 2",
+		Content = "Đã equip và gọi Activate() cho tool slot 2.",
+		Duration = 3
+	})
+end
+
+-- Gán phím 2 (người dùng thật sự nhấn)
+ContextActionService:BindActionAtPriority(
+	"SDVT_ActivateSlot2",
+	function(_, inputState)
+		if inputState == Enum.UserInputState.Begin then
+			equipAndActivateSlot2()
+		end
+	end,
+	false,
+	Enum.ContextActionPriority.High.Value,
+	Enum.KeyCode.Two
+)
+
+ControlTab:CreateLabel("Nhấn phím [2] để kích hoạt Tool Slot 2 (bằng tay).")
+
+-- ========================
+-- 🔁 Auto Load thông báo
+-- ========================
+Rayfield:Notify({
+	Title = "📂 SDVT Auto Load",
+	Content = "Cấu hình SDVTSAB đã được tự động tải.",
+	Duration = 3
+})
