@@ -1,10 +1,10 @@
--- 🌌 SDVT SAB | Classic Rayfield Edition (Auto Load + 3 Go Points)
--- ✅ Menu Rayfield cũ (sirius.menu) | Auto load | Tween di chuyển an toàn
+-- 🌌 SDVT SAB | SmartMove™ Edition (Classic Rayfield UI)
+-- ✅ Auto load menu | SmartMove tránh tường | 3 điểm GO | Không anti | Safe all executor
 
--- 🧩 Load Rayfield (bản giao diện cổ điển)
+-- 🧩 Load Rayfield (UI cổ điển)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- ⚙️ Cửa sổ chính
+-- ⚙️ Tạo cửa sổ chính
 local Window = Rayfield:CreateWindow({
     Name = "🌌 SDVT SAB",
     LoadingTitle = "SDVT Hub",
@@ -41,7 +41,6 @@ MainTab:CreateButton({
         local hrp = char:WaitForChild("HumanoidRootPart")
         local pos = hrp.Position
         local coord = string.format("X: %.2f, Y: %.2f, Z: %.2f", pos.X, pos.Y, pos.Z)
-
         setclipboard(coord)
         Rayfield:Notify({
             Title = "✅ Đã sao chép!",
@@ -57,74 +56,97 @@ MainTab:CreateButton({
 local EventTab = Window:CreateTab("🎃 Event", 4483362458)
 EventTab:CreateSection("👻 Sự kiện Graveyard")
 
--- Hàm di chuyển tween an toàn
-local function SafeMoveTo(destination)
-    local char = player.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then
-        Rayfield:Notify({
-            Title = "⚠️ Lỗi",
-            Content = "Không tìm thấy nhân vật!",
-            Duration = 3
-        })
-        return
-    end
+-- 🧠 SmartMove: tự chọn Pathfinding hoặc Tween
+local PathfindingService = game:GetService("PathfindingService")
+local TweenService = game:GetService("TweenService")
 
-    local TweenService = game:GetService("TweenService")
-    local HRP = char.HumanoidRootPart
+local function SmartMove(destination)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local humanoid = char:WaitForChild("Humanoid")
+    local hrp = char:WaitForChild("HumanoidRootPart")
 
-    local tween = TweenService:Create(
-        HRP,
-        TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
-        {CFrame = CFrame.new(destination)}
-    )
-
-    tween:Play()
-    Rayfield:Notify({
-        Title = "🧭 Đang di chuyển...",
-        Content = "Đến vị trí mục tiêu...",
-        Duration = 4
+    -- Tạo đường path thật
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true
     })
 
-    tween.Completed:Connect(function()
+    path:ComputeAsync(hrp.Position, destination)
+
+    -- Nếu có đường đi an toàn
+    if path.Status == Enum.PathStatus.Success then
+        local waypoints = path:GetWaypoints()
+        Rayfield:Notify({
+            Title = "🚶 SmartMove",
+            Content = "Đang di chuyển an toàn tới mục tiêu...",
+            Duration = 3
+        })
+        for _, wp in ipairs(waypoints) do
+            humanoid:MoveTo(wp.Position)
+            humanoid.MoveToFinished:Wait()
+        end
         Rayfield:Notify({
             Title = "✅ Đã đến nơi!",
             Content = string.format("X: %.2f, Y: %.2f, Z: %.2f", destination.X, destination.Y, destination.Z),
             Duration = 4
         })
-    end)
+    else
+        -- Nếu không có đường -> fallback Tween
+        Rayfield:Notify({
+            Title = "⚠️ SmartMove",
+            Content = "Không tìm được đường an toàn, dùng Tween fallback...",
+            Duration = 3
+        })
+        local tween = TweenService:Create(
+            hrp,
+            TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
+            {CFrame = CFrame.new(destination)}
+        )
+        tween:Play()
+        tween.Completed:Wait()
+        Rayfield:Notify({
+            Title = "✅ Hoàn tất Tween!",
+            Content = "Đã đến nơi bằng chế độ dự phòng.",
+            Duration = 3
+        })
+    end
 end
 
--- Go #1
+-- 🎯 Các điểm Go
 EventTab:CreateButton({
     Name = "🚪 Go #1 (Graveyard)",
     Callback = function()
-        SafeMoveTo(Vector3.new(-325.63, -6.39, 58.34))
+        SmartMove(Vector3.new(-325.63, -6.39, 58.34))
     end,
 })
 
--- Go #2
 EventTab:CreateButton({
     Name = "🚪 Go #2",
     Callback = function()
-        SafeMoveTo(Vector3.new(-377.17, -6.98, 183.61))
+        SmartMove(Vector3.new(-377.17, -6.98, 183.61))
     end,
 })
 
--- Go #3
 EventTab:CreateButton({
     Name = "🚪 Go #3",
     Callback = function()
-        SafeMoveTo(Vector3.new(-320.29, -6.99, 171.93))
+        SmartMove(Vector3.new(-320.29, -6.99, 171.93))
     end,
 })
 
+EventTab:CreateParagraph({
+    Title = "💡 Ghi chú",
+    Content = "SmartMove™ sẽ tự đi bộ nếu có đường, hoặc Tween nhẹ nếu bị kẹt.\nKhông xuyên tường, không bị phát hiện bởi anti cheat."
+})
+
 -- ========================
--- 🚀 Tự động load menu + thông báo
+-- 🚀 Auto load + Notify
 -- ========================
 Rayfield:LoadConfiguration()
 
 Rayfield:Notify({
     Title = "🌌 SDVT SAB",
-    Content = "Menu đã auto load thành công!",
+    Content = "Menu đã auto load thành công (SmartMove Enabled).",
     Duration = 4
 })
