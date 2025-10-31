@@ -1,0 +1,130 @@
+-- 🌌 SDVT SAB | Classic Rayfield Edition (Auto Load + 3 Go Points)
+-- ✅ Menu Rayfield cũ (sirius.menu) | Auto load | Tween di chuyển an toàn
+
+-- 🧩 Load Rayfield (bản giao diện cổ điển)
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- ⚙️ Cửa sổ chính
+local Window = Rayfield:CreateWindow({
+    Name = "🌌 SDVT SAB",
+    LoadingTitle = "SDVT Hub",
+    LoadingSubtitle = "Auto Script",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "SDVT",
+        FileName = "SDVTSAB"
+    }
+})
+
+-- ========================
+-- 📄 TAB 1: INFO
+-- ========================
+local player = game.Players.LocalPlayer
+local InfoTab = Window:CreateTab("📜 Info", 4483362458)
+
+InfoTab:CreateSection("👤 Thông tin người dùng")
+InfoTab:CreateLabel("Tên người dùng: " .. player.Name)
+InfoTab:CreateLabel("UserID: " .. player.UserId)
+InfoTab:CreateLabel("Game ID: " .. game.PlaceId)
+InfoTab:CreateLabel("Mô tả: Script Hub SDVT – hỗ trợ auto & tiện ích Roblox")
+
+-- ========================
+-- 🧭 TAB 2: MAIN
+-- ========================
+local MainTab = Window:CreateTab("🧭 Main", 4483362458)
+MainTab:CreateSection("📌 Lấy & Sao chép tọa độ")
+
+MainTab:CreateButton({
+    Name = "📍 Lấy & Copy tọa độ hiện tại",
+    Callback = function()
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hrp = char:WaitForChild("HumanoidRootPart")
+        local pos = hrp.Position
+        local coord = string.format("X: %.2f, Y: %.2f, Z: %.2f", pos.X, pos.Y, pos.Z)
+
+        setclipboard(coord)
+        Rayfield:Notify({
+            Title = "✅ Đã sao chép!",
+            Content = coord,
+            Duration = 3
+        })
+    end,
+})
+
+-- ========================
+-- 🎃 TAB 3: EVENT
+-- ========================
+local EventTab = Window:CreateTab("🎃 Event", 4483362458)
+EventTab:CreateSection("👻 Sự kiện Graveyard")
+
+-- Hàm di chuyển tween an toàn
+local function SafeMoveTo(destination)
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        Rayfield:Notify({
+            Title = "⚠️ Lỗi",
+            Content = "Không tìm thấy nhân vật!",
+            Duration = 3
+        })
+        return
+    end
+
+    local TweenService = game:GetService("TweenService")
+    local HRP = char.HumanoidRootPart
+
+    local tween = TweenService:Create(
+        HRP,
+        TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
+        {CFrame = CFrame.new(destination)}
+    )
+
+    tween:Play()
+    Rayfield:Notify({
+        Title = "🧭 Đang di chuyển...",
+        Content = "Đến vị trí mục tiêu...",
+        Duration = 4
+    })
+
+    tween.Completed:Connect(function()
+        Rayfield:Notify({
+            Title = "✅ Đã đến nơi!",
+            Content = string.format("X: %.2f, Y: %.2f, Z: %.2f", destination.X, destination.Y, destination.Z),
+            Duration = 4
+        })
+    end)
+end
+
+-- Go #1
+EventTab:CreateButton({
+    Name = "🚪 Go #1 (Graveyard)",
+    Callback = function()
+        SafeMoveTo(Vector3.new(-325.63, -6.39, 58.34))
+    end,
+})
+
+-- Go #2
+EventTab:CreateButton({
+    Name = "🚪 Go #2",
+    Callback = function()
+        SafeMoveTo(Vector3.new(-377.17, -6.98, 183.61))
+    end,
+})
+
+-- Go #3
+EventTab:CreateButton({
+    Name = "🚪 Go #3",
+    Callback = function()
+        SafeMoveTo(Vector3.new(-320.29, -6.99, 171.93))
+    end,
+})
+
+-- ========================
+-- 🚀 Tự động load menu + thông báo
+-- ========================
+Rayfield:LoadConfiguration()
+
+Rayfield:Notify({
+    Title = "🌌 SDVT SAB",
+    Content = "Menu đã auto load thành công!",
+    Duration = 4
+})
