@@ -1,4 +1,5 @@
 -- 🌌 SDVT SAB v6.0 — Visual Auto Navigation (Safe)
+-- Updated: Auto tab renamed to "Event ESP" and buttons renamed to "Di theo #1/2/3"
 -- Không auto nhấn phím, không tween. Hiển thị đường, hướng và gợi ý WASD.
 -- UI: Rayfield classic (https://sirius.menu/rayfield)
 
@@ -36,7 +37,7 @@ MainTab:CreateButton({
 		local hrp = char:WaitForChild("HumanoidRootPart")
 		local pos = hrp.Position
 		local coord = string.format("X: %.2f, Y: %.2f, Z: %.2f", pos.X, pos.Y, pos.Z)
-		setclipboard(coord)
+		pcall(setclipboard, coord)
 		Rayfield:Notify({Title="✅ Đã sao chép", Content=coord, Duration=3})
 	end
 })
@@ -95,10 +96,11 @@ local function showPathTo(target)
 	local parts = drawPath(waypoints)
 	Rayfield:Notify({
 		Title="✅ Đã vẽ đường đi",
-		Content="Đi theo đường neon màu xanh lá.\nGiữ SHIFT thỉnh thoảng để chạy nhanh.",
+		Content="Đi theo đường neon màu xanh lá.\nGợi ý: giữ SHIFT khi muốn chạy (thủ công).",
 		Duration=5
 	})
-	task.delay(15, function() clearPath(parts) end)
+	-- Auto-clear sau 20s để khỏi đầy workspace
+	task.delay(20, function() clearPath(parts) end)
 end
 
 EventTab:CreateButton({
@@ -116,44 +118,53 @@ EventTab:CreateButton({
 	Callback = function() showPathTo(GravePoints[3]) end
 })
 
--- 🚗 TAB 4: AUTO
-local AutoTab = Window:CreateTab("⚙️ Auto", 4483362458)
-AutoTab:CreateSection("🧭 Auto Navigation Preview")
+-- 🚗 TAB 4: Event ESP (renamed from Auto)
+local ESPTab = Window:CreateTab("🛰️ Event ESP", 4483362458)
+ESPTab:CreateSection("🧭 Event ESP - Di theo (Visual Assist)")
 
-AutoTab:CreateLabel("💡 Tính năng này chỉ **vẽ và xem trước** lộ trình.\nKhông tự điều khiển nhân vật, an toàn tuyệt đối.")
+ESPTab:CreateLabel("Ghi chú: Các nút 'Di theo' chỉ vẽ đường và đưa gợi ý; bạn phải di chuyển thủ công bằng WASD/SHIFT.")
 
-AutoTab:CreateButton({
-	Name = "🚶‍♂️ Xem trước đường tới Graveyard #1",
-	Callback = function() showPathTo(GravePoints[1]) end
-})
-
-AutoTab:CreateButton({
-	Name = "🚶‍♂️ Xem trước đường tới Graveyard #2",
-	Callback = function() showPathTo(GravePoints[2]) end
-})
-
-AutoTab:CreateButton({
-	Name = "🚶‍♂️ Xem trước đường tới Graveyard #3",
-	Callback = function() showPathTo(GravePoints[3]) end
-})
-
-AutoTab:CreateButton({
-	Name = "🧹 Xóa tất cả đường hiện tại",
+ESPTab:CreateButton({
+	Name = "Di theo #1",
 	Callback = function()
-		for _, obj in pairs(workspace:GetChildren()) do
-			if obj:IsA("Part") and obj.Material == Enum.Material.Neon then
-				obj:Destroy()
-			end
-		end
-		Rayfield:Notify({Title="🧽 Đã xóa đường", Content="Tất cả vạch neon đã bị xóa.", Duration=2})
+		-- Vẽ đường và hiển thị gợi ý tới điểm 1
+		showPathTo(GravePoints[1])
 	end
 })
 
--- Auto load UI config
+ESPTab:CreateButton({
+	Name = "Di theo #2",
+	Callback = function()
+		-- Vẽ đường và hiển thị gợi ý tới điểm 2
+		showPathTo(GravePoints[2])
+	end
+})
+
+ESPTab:CreateButton({
+	Name = "Di theo #3",
+	Callback = function()
+		-- Vẽ đường và hiển thị gợi ý tới điểm 3
+		showPathTo(GravePoints[3])
+	end
+})
+
+ESPTab:CreateButton({
+	Name = "Xóa tất cả đường neon",
+	Callback = function()
+		for _, obj in pairs(workspace:GetChildren()) do
+			if obj:IsA("Part") and obj.Material == Enum.Material.Neon and obj.Transparency <= 0.3 then
+				pcall(function() obj:Destroy() end)
+			end
+		end
+		Rayfield:Notify({Title="🧽 Đã xóa đường", Content="Đã xóa các phần neon do script tạo.", Duration=2})
+	end
+})
+
+-- Auto load UI config (attempt)
 pcall(function() Rayfield:LoadConfiguration() end)
 
 Rayfield:Notify({
 	Title="🌌 SDVT SAB v6.0",
-	Content="Giao diện đã sẵn sàng.\nSử dụng tab Auto để xem trước lộ trình an toàn.",
+	Content="Event ESP ready — nhấn 'Di theo #' để vẽ đường. Lưu ý: di chuyển thủ công bằng WASD/SHIFT.",
 	Duration=5
 })
