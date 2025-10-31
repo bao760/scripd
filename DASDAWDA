@@ -1,0 +1,272 @@
+-- SDVT SAB — Visual Assist Mode (No auto keypress)
+-- Classic Rayfield UI (sirius.menu)
+-- Chức năng: 3 Go points, Pathfinding, Draw GPS, Show WASD suggestions + occasional "Hold SHIFT" and "Turn camera" hint
+-- NOTE: Script không gửi phím tự động. Người chơi phải bấm W/A/S/D/Shift thủ công theo hướng dẫn.
+
+-- Load Rayfield classic
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Players = game:GetService("Players")
+local PathfindingService = game:GetService("PathfindingService")
+local player = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+-- Create window
+local Window = Rayfield:CreateWindow({
+    Name = "🌌 SDVT SAB - Visual Assist",
+    LoadingTitle = "SDVT Hub",
+    LoadingSubtitle = "Visual Assist Mode"
+})
+
+-- Tabs
+local InfoTab = Window:CreateTab("📜 Info", 4483362458)
+local MainTab = Window:CreateTab("🧭 Main", 4483362458)
+local EventTab = Window:CreateTab("🎃 Event", 4483362458)
+
+-- Info
+InfoTab:CreateSection("👤 Player")
+InfoTab:CreateLabel("Name: " .. tostring(player.Name))
+InfoTab:CreateLabel("UserId: " .. tostring(player.UserId))
+InfoTab:CreateLabel("GameId: " .. tostring(game.PlaceId))
+
+-- Main: copy coord
+MainTab:CreateSection("📌 Coordinates")
+MainTab:CreateButton({
+    Name = "📍 Lấy & Copy tọa độ hiện tại",
+    Callback = function()
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then
+            Rayfield:Notify({Title="⚠️ Lỗi", Content="Không tìm thấy HRP", Duration=3})
+            return
+        end
+        local coord = string.format("X: %.2f, Y: %.2f, Z: %.2f", hrp.Position.X, hrp.Position.Y, hrp.Position.Z)
+        pcall(setclipboard, coord)
+        Rayfield:Notify({Title="✅ Đã copy", Content=coord, Duration=3})
+    end
+})
+
+-- Event: Smart Visual Move
+EventTab:CreateSection("🌑 Graveyard Visual Assist")
+EventTab:CreateLabel("Hướng dẫn: Script sẽ vẽ đường và chỉ gợi ý phím. Bạn bấm W/A/S/D/Shift thủ công.")
+
+-- Go points
+local GO_POINTS = {
+    Vector3.new(-325.63, -6.39, 58.34),  -- Go #1
+    Vector3.new(-377.17, -6.98, 183.61), -- Go #2
+    Vector3.new(-320.29, -6.99, 171.93)  -- Go #3
+}
+
+-- UI overlay (ScreenGui) for suggestions
+local function createOverlay()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "SDVT_VisualAssist_GUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = game:GetService("CoreGui") -- try CoreGui so user sees it always
+
+    local frame = Instance.new("Frame", screenGui)
+    frame.AnchorPoint = Vector2.new(0.5, 0.9)
+    frame.Position = UDim2.new(0.5, 0, 0.9, 0)
+    frame.Size = UDim2.new(0, 420, 0, 110)
+    frame.BackgroundTransparency = 0.35
+    frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+    frame.BorderSizePixel = 0
+    frame.Name = "AssistFrame"
+    frame.Visible = false
+
+    local title = Instance.new("TextLabel", frame)
+    title.Size = UDim2.new(1, -10, 0, 28)
+    title.Position = UDim2.new(0, 5, 0, 5)
+    title.BackgroundTransparency = 1
+    title.Text = "SDVT Visual Assist"
+    title.TextColor3 = Color3.fromRGB(255,255,255)
+    title.TextScaled = true
+    title.Font = Enum.Font.GothamBold
+
+    local hint = Instance.new("TextLabel", frame)
+    hint.Name = "HintLabel"
+    hint.Size = UDim2.new(1, -10, 0, 60)
+    hint.Position = UDim2.new(0, 5, 0, 34)
+    hint.BackgroundTransparency = 1
+    hint.Text = "Ready..."
+    hint.TextColor3 = Color3.fromRGB(220,220,220)
+    hint.TextWrapped = true
+    hint.TextYAlignment = Enum.TextYAlignment.Top
+    hint.Font = Enum.Font.Gotham
+
+    -- small stop button
+    local stopBtn = Instance.new("TextButton", frame)
+    stopBtn.Size = UDim2.new(0,80,0,28)
+    stopBtn.Position = UDim2.new(1, -85, 0, 5)
+    stopBtn.Text = "Stop"
+    stopBtn.Font = Enum.Font.GothamBold
+    stopBtn.TextScaled = true
+    stopBtn.BackgroundColor3 = Color3.fromRGB(180,40,40)
+    stopBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    stopBtn.Name = "StopBtn"
+
+    return screenGui, frame, hint, stopBtn
+end
+
+-- Path drawing
+local function drawPathParts(waypoints)
+    local parts = {}
+    for i = 1, #waypoints-1 do
+        local p1 = waypoints[i].Position
+        local p2 = waypoints[i+1].Position
+        local dist = (p1 - p2).Magnitude
+        local mid = (p1 + p2) / 2
+        local part = Instance.new("Part")
+        part.Anchored = true
+        part.CanCollide = false
+        part.Material = Enum.Material.Neon
+        part.Size = Vector3.new(0.22, 0.22, math.max(0.6, dist))
+        part.CFrame = CFrame.new(mid, p2) * CFrame.new(0, 0, -dist/2)
+        part.Transparency = 0.15
+        part.Color = Color3.fromRGB(0,200,120)
+        part.Parent = workspace
+        table.insert(parts, part)
+    end
+    return parts
+end
+
+local function clearParts(parts)
+    for _,p in ipairs(parts) do
+        if p and p.Parent then p:Destroy() end
+    end
+end
+
+-- Helper: choose suggested key from direction vector
+local function suggestKeyFromDir(dir)
+    dir = Vector3.new(dir.X, 0, dir.Z)
+    if dir.Magnitude == 0 then return "W" end
+    local unit = dir.Unit
+    local ax = math.abs(unit.X)
+    local az = math.abs(unit.Z)
+    if ax > az then
+        if unit.X > 0 then return "D" else return "A" end
+    else
+        if unit.Z > 0 then return "W" else return "S" end
+    end
+end
+
+-- Core: Visual Assist runner
+local running = false
+local function VisualAssistTo(target)
+    if running then
+        Rayfield:Notify({Title="⚠️ Busy", Content="Assist đang chạy, chờ hoặc ấn Stop.", Duration=2})
+        return
+    end
+    running = true
+
+    local char = player.Character or player.CharacterAdded:Wait()
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not hrp then
+        Rayfield:Notify({Title="⚠️ Lỗi", Content="Không tìm thấy character/HRP", Duration=3})
+        running = false
+        return
+    end
+
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanClimb = true,
+        AgentCanJump = true
+    })
+    path:ComputeAsync(hrp.Position, target)
+
+    if path.Status ~= Enum.PathStatus.Success then
+        Rayfield:Notify({Title="⚠️ No path", Content="Không tìm được đường an toàn. (Chỉ vẽ & gợi ý)", Duration=3})
+        running = false
+        return
+    end
+
+    local waypoints = path:GetWaypoints()
+    local parts = drawPathParts(waypoints)
+
+    -- create overlay
+    local screenGui, frame, hintLabel, stopBtn = createOverlay()
+    frame.Visible = true
+
+    -- stop handler
+    local stopped = false
+    stopBtn.MouseButton1Click:Connect(function()
+        stopped = true
+    end)
+
+    -- iterate waypoints and show suggestions
+    for i, wp in ipairs(waypoints) do
+        if stopped then break end
+
+        local targetPos = wp.Position
+        -- compute suggestion
+        local dir = targetPos - hrp.Position
+        local suggested = suggestKeyFromDir(dir)
+        -- occasionally ask to hold Shift or turn camera
+        local extra = ""
+        if math.random() < 0.22 then
+            extra = " • Thỉnh thoảng giữ SHIFT để chạy"
+        end
+        if math.random() < 0.18 then
+            extra = extra .. " • Quay camera 1 vòng nhẹ"
+        end
+
+        -- set hint UI
+        hintLabel.Text = string.format("Mục tiêu %d/%d\nGợi ý: Nhấn phím: %s%s\nKhoảng cách: %.1fm\n(Ấn Stop để hủy)", i, #waypoints, suggested, extra, (hrp.Position - targetPos).Magnitude/1)
+
+        -- wait until player reaches near waypoint or stop or timeout
+        local start = tick()
+        while (hrp.Position - targetPos).Magnitude > math.max(1.2, wp.Position.Y == targetPos.Y and 1.2 or 1.2) do
+            if stopped then break end
+            -- update hint distance
+            hintLabel.Text = string.format("Mục tiêu %d/%d\nGợi ý: Nhấn phím: %s%s\nKhoảng cách: %.1fm\n(Ấn Stop để hủy)", i, #waypoints, suggested, extra, (hrp.Position - targetPos).Magnitude)
+            task.wait(0.25)
+            -- safety timeout for this waypoint (to avoid infinite wait)
+            if tick() - start > 40 then
+                hintLabel.Text = hintLabel.Text .. "\n⏳ Timeout: hãy thử di chuyển thủ công hoặc nhấn Stop"
+                break
+            end
+        end
+        task.wait(0.2)
+    end
+
+    -- cleanup
+    clearParts(parts)
+    frame:Destroy()
+    screenGui:Destroy()
+
+    if not stopped then
+        Rayfield:Notify({Title="✅ Hoàn tất", Content="Bạn đã di chuyển theo đường.", Duration=3})
+    else
+        Rayfield:Notify({Title="⛔ Đã dừng", Content="Visual Assist đã bị hủy.", Duration=3})
+    end
+
+    running = false
+end
+
+-- Create Go buttons
+EventTab:CreateButton({
+    Name = "🪦 Go #1 | Visual Assist",
+    Callback = function()
+        task.spawn(function() VisualAssistTo(GO_POINTS[1]) end)
+    end
+})
+
+EventTab:CreateButton({
+    Name = "🪦 Go #2 | Visual Assist",
+    Callback = function()
+        task.spawn(function() VisualAssistTo(GO_POINTS[2]) end)
+    end
+})
+
+EventTab:CreateButton({
+    Name = "🪦 Go #3 | Visual Assist",
+    Callback = function()
+        task.spawn(function() VisualAssistTo(GO_POINTS[3]) end)
+    end
+})
+
+-- Auto load menu configuration (if Rayfield supports it)
+pcall(function() Rayfield:LoadConfiguration() end)
+
+Rayfield:Notify({Title="🌌 SDVT Visual Assist Ready", Content="Nhấn Go # để vẽ đường & nhận gợi ý WASD. Script không tự nhấn phím.", Duration=4})
