@@ -1,0 +1,107 @@
+-- SDVT BF - Rayfield (Sirius.menu version)
+-- Tab 1: Info
+-- Tab 2: Server -> Hop Low Server (tìm server ít người nhất rồi teleport)
+
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "SDVT BF",
+    LoadingTitle = "SDVT Hub",
+    LoadingSubtitle = "Powered by Rayfield Sirius",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = nil,
+        FileName = "SDVT_BF_Config"
+    },
+    Discord = {
+        Enabled = false
+    }
+})
+
+-- // Tab Info
+local InfoTab = Window:CreateTab("Info 🧾")
+InfoTab:CreateSection("Giới thiệu")
+InfoTab:CreateLabel("Tên: SDVT BF (Sirius Edition)")
+InfoTab:CreateLabel("Tính năng: Hop Low Server - tìm server ít người")
+InfoTab:CreateLabel("Tác giả: SDVT Team")
+
+-- // Tab Server
+local ServerTab = Window:CreateTab("Server 🌐")
+ServerTab:CreateSection("Server Tools")
+
+local PLACE_ID = game.PlaceId
+
+local function findLowServer()
+    local HttpService = game:GetService("HttpService")
+    local cursor = nil
+    local bestServer = nil
+
+    repeat
+        local url = string.format("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100", PLACE_ID)
+        if cursor then url = url .. "&cursor=" .. cursor end
+
+        local success, body = pcall(function()
+            return game:HttpGet(url)
+        end)
+        if not success then
+            Rayfield:Notify({
+                Title = "SDVT BF",
+                Content = "Không lấy được danh sách server!",
+                Duration = 5
+            })
+            return nil
+        end
+
+        local data = HttpService:JSONDecode(body)
+        for _, server in ipairs(data.data) do
+            if server.playing < server.maxPlayers then
+                if not bestServer or server.playing < bestServer.playing then
+                    bestServer = server
+                end
+            end
+        end
+
+        cursor = data.nextPageCursor
+        task.wait(0.3)
+    until not cursor
+
+    return bestServer
+end
+
+ServerTab:CreateButton({
+    Name = "🔄 Hop Low Server",
+    Callback = function()
+        Rayfield:Notify({
+            Title = "SDVT BF",
+            Content = "Đang tìm server ít người...",
+            Duration = 3
+        })
+
+        local TeleportService = game:GetService("TeleportService")
+        local Players = game:GetService("Players")
+
+        local server = findLowServer()
+        if server then
+            Rayfield:Notify({
+                Title = "SDVT BF",
+                Content = "Tìm thấy server! Người chơi: " .. tostring(server.playing) .. " - Đang Teleport...",
+                Duration = 4
+            })
+            TeleportService:TeleportToPlaceInstance(PLACE_ID, server.id, Players.LocalPlayer)
+        else
+            Rayfield:Notify({
+                Title = "SDVT BF",
+                Content = "Không tìm được server phù hợp!",
+                Duration = 4
+            })
+        end
+    end
+})
+
+ServerTab:CreateLabel("➡ Bấm nút trên để chuyển sang server ít người nhất.")
+
+Rayfield:Notify({
+    Title = "SDVT BF",
+    Content = "Menu SDVT BF (Sirius Edition) đã tải thành công!",
+    Duration = 6
+})
