@@ -1,0 +1,234 @@
+-- SDVT BF - Rayfield (Robust wrapper cho nhiều biến thể Sirius/ Rayfield)
+-- Dán chạy trong executor sau khi bạn đã load Rayfield bằng:
+-- local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+-- Nếu bạn chưa load, script này sẽ tự load nếu có kết nối:
+local function safe_load_rayfield()
+    local ok, Rayfield = pcall(function()
+        return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+    end)
+    if ok and Rayfield then return Rayfield end
+    return nil, "Cannot load Rayfield from https://sirius.menu/rayfield"
+end
+
+local Rayfield = safe_load_rayfield()
+if not Rayfield then
+    warn("SDVT BF: Không tải được Rayfield loader. Hãy chắc bạn đang có kết nối hoặc loader hợp lệ.")
+    return
+end
+
+-- ===== Helper: wrapper để tương thích nhiều API =====
+local function create_window(opts)
+    -- nhiều bản Rayfield dùng key khác nhau: CreateWindow, CreateWindow? or Rayfield:CreateWindow
+    local win
+    local ok, res
+
+    -- try Rayfield:CreateWindow({...})
+    ok, res = pcall(function() return Rayfield:CreateWindow(opts) end)
+    if ok and res then return res end
+
+    -- try Rayfield.CreateWindow(Rayfield, {...})
+    ok, res = pcall(function() return Rayfield.CreateWindow(Rayfield, opts) end)
+    if ok and res then return res end
+
+    -- try alternate names
+    ok, res = pcall(function() return Rayfield:Window(opts) end)
+    if ok and res then return res end
+
+    ok, res = pcall(function() return Rayfield.Window(Rayfield, opts) end)
+    if ok and res then return res end
+
+    error("SDVT BF: Không tìm thấy phương thức tạo Window trong Rayfield.")
+end
+
+local function create_tab(window, name)
+    local ok, res
+    -- nhiều API: CreateTab, Tab, CreatePage, NewTab
+    local tries = {
+        function() return window:CreateTab(name) end,
+        function() return window.CreateTab(window, name) end,
+        function() return window:Tab(name) end,
+        function() return window.Tab(window, name) end,
+        function() return window:CreatePage(name) end,
+        function() return window.CreatePage(window, name) end,
+        function() return window:NewTab(name) end,
+        function() return window.NewTab(window, name) end,
+    }
+    for _, fn in ipairs(tries) do
+        ok, res = pcall(fn)
+        if ok and res then return res end
+    end
+    error("SDVT BF: Không tìm thấy phương thức tạo Tab trong Window.")
+end
+
+local function tab_label(tab, text)
+    local ok
+    local tries = {
+        function() return tab:CreateLabel(text) end,
+        function() return tab.CreateLabel(tab, text) end,
+        function() return tab:Label(text) end,
+        function() return tab.Label(tab, text) end,
+        function() return tab:CreateSection(text) end, -- phần nào đó dùng section
+    }
+    for _, fn in ipairs(tries) do
+        ok = pcall(fn)
+        if ok then return true end
+    end
+    return false
+end
+
+local function tab_paragraph(tab, title, content)
+    local ok
+    local tries = {
+        function() return tab:CreateParagraph({Title = title, Content = content}) end,
+        function() return tab.CreateParagraph(tab, {Title = title, Content = content}) end,
+        function() return tab:Paragraph(title, content) end,
+        function() return tab.Paragraph(tab, title, content) end,
+    }
+    for _, fn in ipairs(tries) do
+        ok = pcall(fn)
+        if ok then return true end
+    end
+    return false
+end
+
+local function tab_button(tab, opts)
+    -- opts = {Title, Description, Callback}
+    local ok, res
+    local tries = {
+        function() return tab:CreateButton({Name = opts.Title or opts.title, Description = opts.Description or opts.description, Callback = opts.Callback}) end,
+        function() return tab.CreateButton(tab, {Name = opts.Title or opts.title, Description = opts.Description or opts.description, Callback = opts.Callback}) end,
+        function() return tab:Button({Title = opts.Title or opts.title, Description = opts.Description or opts.description, Callback = opts.Callback}) end,
+        function() return tab.Button(tab, {Title = opts.Title or opts.title, Description = opts.Description or opts.description, Callback = opts.Callback}) end,
+        function() return tab:Button(opts.Title or opts.title, opts.Callback) end,
+        function() return tab.Button(tab, opts.Title or opts.title, opts.Callback) end,
+        function() return tab:CreateToggle({Name = opts.Title or opts.title, CurrentValue = false, Callback = function() end}) end
+    }
+    for _, fn in ipairs(tries) do
+        ok, res = pcall(fn)
+        if ok then return res end
+    end
+    error("SDVT BF: Không thể tạo button trên Tab (API không khớp).")
+end
+
+local function notify(...) -- đa năng: nhiều bản sử dụng Notify({...}) hoặc Notify(str, time)
+    local ok
+    local args = {...}
+    -- Try multiple signatures
+    ok = pcall(function() Rayfield:Notify(unpack(args)) end)
+    if ok then return true end
+    ok = pcall(function() Rayfield.Notify(Rayfield, unpack(args)) end)
+    if ok then return true end
+    -- try single string
+    if type(args[1]) == "string" then
+        ok = pcall(function() Rayfield:Notify({Title = "SDVT BF", Content = args[1], Duration = args[2] or 4}) end)
+        if ok then return true end
+    end
+    return false
+end
+
+-- ===== Tạo UI =====
+local win_ok, window = pcall(function()
+    return create_window({
+        Title = "SDVT BF",
+        SubTitle = "Sirius-compatible",
+        LoadingTitle = "SDVT BF",
+        KeySystem = false
+    })
+end)
+if not win_ok then
+    warn("SDVT BF: Tạo window thất bại:", window)
+    return
+end
+
+local infoTab, serverTab
+local ok, res = pcall(function() infoTab = create_tab(window, "Info") end)
+if not ok then
+    warn("SDVT BF: Tạo tab Info lỗi:", res)
+    return
+end
+ok, res = pcall(function() serverTab = create_tab(window, "Server") end)
+if not ok then
+    warn("SDVT BF: Tạo tab Server lỗi:", res)
+    return
+end
+
+-- Fill Info tab
+pcall(function() tab_label(infoTab, "Script: SDVT BF (Sirius-compatible)") end)
+pcall(function() tab_paragraph(infoTab, "Tính năng", "Hop Low Server - tìm server ít người và teleport vào.") end)
+pcall(function() tab_paragraph(infoTab, "Hướng dẫn", "Vào tab Server, bấm nút Hop Low Server.") end)
+
+-- ===== Server logic =====
+local PLACE_ID = game.PlaceId
+
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+
+local function find_low_server(limit_per_page)
+    limit_per_page = limit_per_page or 100
+    local cursor = nil
+    local best = nil
+    repeat
+        local url = string.format("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=%d", PLACE_ID, limit_per_page)
+        if cursor then url = url .. "&cursor=" .. tostring(cursor) end
+        local ok, body = pcall(function() return game:HttpGet(url) end)
+        if not ok or not body then
+            return nil, "http_error"
+        end
+        local ok2, data = pcall(function() return HttpService:JSONDecode(body) end)
+        if not ok2 or not data then
+            return nil, "json_error"
+        end
+        if data.data then
+            for _, s in ipairs(data.data) do
+                if s.playing and s.maxPlayers and s.playing < s.maxPlayers then
+                    if not best or s.playing < best.playing then
+                        best = s
+                    end
+                end
+            end
+        end
+        cursor = data.nextPageCursor
+        task.wait(0.25)
+    until not cursor
+    if best then return best end
+    return nil, "no_server"
+end
+
+-- Button callback
+local function on_hop_pressed()
+    notify("Đang tìm server ít người...", 3)
+    local srv, err = find_low_server(100)
+    if not srv then
+        notify("Không tìm thấy server: " .. tostring(err), 4)
+        return
+    end
+    notify("Tìm thấy server (người: " .. tostring(srv.playing) .. ") - Teleport...", 3)
+    local ok, e = pcall(function()
+        TeleportService:TeleportToPlaceInstance(PLACE_ID, srv.id, Players.LocalPlayer)
+    end)
+    if not ok then
+        notify("Teleport lỗi: " .. tostring(e), 5)
+    end
+end
+
+-- Tạo nút trên tab Server (dùng wrapper try multiple APIs)
+local success, btn = pcall(function()
+    return tab_button(serverTab, {
+        Title = "🔄 Hop Low Server",
+        Description = "Tìm server ít người nhất và teleport vào",
+        Callback = on_hop_pressed
+    })
+end)
+if not success then
+    warn("SDVT BF: Tạo button thất bại:", btn)
+    -- fallback: cố gắng tạo label hướng dẫn
+    pcall(function() tab_label(serverTab, "Nếu nút không hiện, hãy kiểm tra API Rayfield bạn đang dùng.") end)
+else
+    -- thêm nhãn hướng dẫn
+    pcall(function() tab_label(serverTab, "➡ Nhấn nút trên để hop server ít người.") end)
+end
+
+-- Notify ready
+notify("✅ SDVT BF đã tải (Sirius-compatible).", 4)
