@@ -1,0 +1,177 @@
+--// 💠 SDVT v1.1
+--// Auto load Settings + Modern Rayfield UI
+--// Tab 1: Info | Tab 2: TP Player | Tab 3: Coming Soon
+
+-- Load Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+------------------------------------------------
+-- 🚀 Hiệu ứng khởi động
+------------------------------------------------
+local introMessages = {
+    "⚙️ Đang khởi tạo giao diện SDVT...",
+    "💻 Đang tải hệ thống TP...",
+    "🌐 Kết nối Rayfield Framework...",
+    "🔋 Đang tải cấu hình Settings...",
+    "✅ SDVT đã sẵn sàng!"
+}
+
+for i, msg in ipairs(introMessages) do
+    Rayfield:Notify({
+        Title = "SDVT SYSTEM",
+        Content = msg,
+        Duration = 1.3,
+        Image = 4483362458
+    })
+    task.wait(0.7)
+end
+
+------------------------------------------------
+-- 🪩 Tạo cửa sổ chính
+------------------------------------------------
+local Window = Rayfield:CreateWindow({
+    Name = "💠 SDVT Interface",
+    LoadingTitle = "SDVT Loading...",
+    LoadingSubtitle = "Auto Config | Tech Aesthetic | v1.1",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "SDVT_Config",
+        FileName = "Settings",
+        AutoSave = true,      -- tự lưu mỗi khi đổi
+        AutoLoad = true       -- ✅ tự động load khi mở
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "yourInvite",
+        RememberJoins = true
+    },
+    IntroEnabled = false,
+    KeySystem = false,
+})
+
+------------------------------------------------
+-- 🧩 TAB 1 - INFO
+------------------------------------------------
+local InfoTab = Window:CreateTab("Info", 4483362458)
+InfoTab:CreateSection("Giới thiệu")
+
+InfoTab:CreateParagraph({
+    Title = "💠 SDVT UI",
+    Content = "Phiên bản 1.1 — Hệ thống tự động lưu và khôi phục Settings mỗi lần mở game.\nThiết kế theo phong cách công nghệ hiện đại. 🌐"
+})
+
+InfoTab:CreateParagraph({
+    Title = "Credits",
+    Content = "👤 Tác giả: phamgiabao\n💡 Framework: Rayfield\n🧠 Version: 1.1 (Auto Config)"
+})
+
+InfoTab:CreateButton({
+    Name = "📋 Sao chép tên UI",
+    Callback = function()
+        pcall(setclipboard, "SDVT")
+        Rayfield:Notify({
+            Title = "SDVT",
+            Content = "Đã sao chép tên UI!",
+            Duration = 3,
+            Image = 4483362458
+        })
+    end
+})
+
+InfoTab:CreateButton({
+    Name = "🔄 Tải lại Settings",
+    Callback = function()
+        Rayfield:LoadConfiguration() -- ✅ tự load lại nếu người dùng muốn
+        Rayfield:Notify({
+            Title = "SDVT",
+            Content = "Settings đã được tải lại thành công.",
+            Duration = 2
+        })
+    end
+})
+
+------------------------------------------------
+-- 🚀 TAB 2 - TP PLAYER
+------------------------------------------------
+local TPPlayerTab = Window:CreateTab("TP Player", 6031075931)
+TPPlayerTab:CreateSection("Dịch chuyển đến người chơi")
+
+local targetName = ""
+
+local tpBox = TPPlayerTab:CreateTextbox({
+    Name = "Nhập tên người chơi cần TP đến",
+    PlaceholderText = "Ví dụ: Noob123",
+    RemoveTextAfterFocusLost = false,
+    Flag = "tp_target",
+    Callback = function(Text)
+        targetName = Text
+        Rayfield:Notify({
+            Title = "TP Player",
+            Content = "Người chơi mục tiêu: " .. Text,
+            Duration = 2
+        })
+    end
+})
+
+TPPlayerTab:CreateButton({
+    Name = "🚀 TP GO",
+    Callback = function()
+        if targetName == "" then
+            Rayfield:Notify({
+                Title = "Lỗi",
+                Content = "Vui lòng nhập tên người chơi!",
+                Duration = 2
+            })
+            return
+        end
+
+        local targetPlayer = game.Players:FindFirstChild(targetName)
+        local localPlayer = game.Players.LocalPlayer
+
+        if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            localPlayer.Character:MoveTo(hrp.Position + Vector3.new(0, 3, 0))
+            Rayfield:Notify({
+                Title = "✅ TP Thành công",
+                Content = "Đã dịch chuyển đến " .. targetName,
+                Duration = 3,
+                Image = 6031075931
+            })
+        else
+            Rayfield:Notify({
+                Title = "❌ Lỗi",
+                Content = "Không tìm thấy người chơi hoặc nhân vật chưa load.",
+                Duration = 3
+            })
+        end
+    end
+})
+
+TPPlayerTab:CreateParagraph({
+    Title = "📘 Ghi chú",
+    Content = "Công cụ TP tự lưu tên đã nhập. Hệ thống tự động khôi phục Settings khi khởi động lại UI."
+})
+
+------------------------------------------------
+-- 🧠 TAB 3 - COMING SOON
+------------------------------------------------
+local FutureTab = Window:CreateTab("Main", 6031265976)
+FutureTab:CreateSection("Tính năng đang phát triển")
+
+FutureTab:CreateParagraph({
+    Title = "🔧 Coming Soon",
+    Content = "Tab này sẽ bao gồm Auto Tools, Visuals, và các tính năng mở rộng khác.\nMọi cấu hình sẽ tự động lưu!"
+})
+
+------------------------------------------------
+-- 🧠 Tải lại cấu hình (nếu có)
+------------------------------------------------
+pcall(function()
+    Rayfield:LoadConfiguration() -- 🔁 auto load file Settings.lua
+end)
+
+Rayfield:Notify({
+    Title = "💠 SDVT",
+    Content = "Auto-load Settings thành công! Mọi cấu hình trước đó đã được khôi phục.",
+    Duration = 3
+})
