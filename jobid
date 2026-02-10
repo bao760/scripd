@@ -1,56 +1,63 @@
---// Simple JobId Join Script
---// Run as LocalScript
+--// Executor JobId Joiner (SAFE GUI)
+
+repeat task.wait() until game:IsLoaded()
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
-local player = Players.LocalPlayer
-local placeId = game.PlaceId
 
--- GUI
+local lp = Players.LocalPlayer
+repeat task.wait() until lp and lp:FindFirstChild("PlayerGui")
+
+local pg = lp.PlayerGui
+
+-- clear old gui
+pcall(function()
+	if pg:FindFirstChild("JobIdJoiner") then
+		pg.JobIdJoiner:Destroy()
+	end
+end)
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "JobIdJoiner"
+gui.Parent = pg
 gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
+gui.DisplayOrder = 10000
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.fromScale(0.25, 0.18)
-frame.Position = UDim2.fromScale(0.375, 0.4)
-frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-frame.BorderSizePixel = 0
+frame.Size = UDim2.fromOffset(300,160)
+frame.Position = UDim2.fromScale(0.5,0.5) - UDim2.fromOffset(150,80)
+frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 frame.Active = true
 frame.Draggable = true
 
-local uiCorner = Instance.new("UICorner", frame)
-uiCorner.CornerRadius = UDim.new(0,12)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,10)
 
--- TextBox nhập JobId
-local jobBox = Instance.new("TextBox", frame)
-jobBox.Size = UDim2.fromScale(0.9, 0.35)
-jobBox.Position = UDim2.fromScale(0.05, 0.15)
-jobBox.PlaceholderText = "Nhập JobId server..."
-jobBox.Text = ""
-jobBox.TextScaled = true
-jobBox.BackgroundColor3 = Color3.fromRGB(45,45,45)
-jobBox.TextColor3 = Color3.new(1,1,1)
-jobBox.ClearTextOnFocus = false
+local box = Instance.new("TextBox", frame)
+box.Size = UDim2.fromScale(0.9,0.3)
+box.Position = UDim2.fromScale(0.05,0.15)
+box.PlaceholderText = "Paste JobId here"
+box.Text = ""
+box.TextScaled = true
+box.ClearTextOnFocus = false
+box.BackgroundColor3 = Color3.fromRGB(40,40,40)
+box.TextColor3 = Color3.new(1,1,1)
 
-Instance.new("UICorner", jobBox).CornerRadius = UDim.new(0,8)
+Instance.new("UICorner", box).CornerRadius = UDim.new(0,8)
 
--- Nút Join
-local joinBtn = Instance.new("TextButton", frame)
-joinBtn.Size = UDim2.fromScale(0.9, 0.3)
-joinBtn.Position = UDim2.fromScale(0.05, 0.6)
-joinBtn.Text = "JOIN SERVER"
-joinBtn.TextScaled = true
-joinBtn.BackgroundColor3 = Color3.fromRGB(0,170,127)
-joinBtn.TextColor3 = Color3.new(1,1,1)
+local btn = Instance.new("TextButton", frame)
+btn.Size = UDim2.fromScale(0.9,0.25)
+btn.Position = UDim2.fromScale(0.05,0.6)
+btn.Text = "JOIN JOBID"
+btn.TextScaled = true
+btn.BackgroundColor3 = Color3.fromRGB(0,170,127)
+btn.TextColor3 = Color3.new(1,1,1)
 
-Instance.new("UICorner", joinBtn).CornerRadius = UDim.new(0,8)
+Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
 
--- Logic Join
-joinBtn.MouseButton1Click:Connect(function()
-	local jobId = jobBox.Text
-	if jobId ~= "" then
-		TeleportService:TeleportToPlaceInstance(placeId, jobId, player)
+btn.MouseButton1Click:Connect(function()
+	if box.Text ~= "" then
+		TeleportService:TeleportToPlaceInstance(game.PlaceId, box.Text, lp)
 	end
 end)
+
+print("✅ JobId Joiner GUI Loaded")
