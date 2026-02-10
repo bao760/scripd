@@ -1,0 +1,56 @@
+--// Simple JobId Join Script
+--// Run as LocalScript
+
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local player = Players.LocalPlayer
+local placeId = game.PlaceId
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "JobIdJoiner"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.fromScale(0.25, 0.18)
+frame.Position = UDim2.fromScale(0.375, 0.4)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+
+local uiCorner = Instance.new("UICorner", frame)
+uiCorner.CornerRadius = UDim.new(0,12)
+
+-- TextBox nhập JobId
+local jobBox = Instance.new("TextBox", frame)
+jobBox.Size = UDim2.fromScale(0.9, 0.35)
+jobBox.Position = UDim2.fromScale(0.05, 0.15)
+jobBox.PlaceholderText = "Nhập JobId server..."
+jobBox.Text = ""
+jobBox.TextScaled = true
+jobBox.BackgroundColor3 = Color3.fromRGB(45,45,45)
+jobBox.TextColor3 = Color3.new(1,1,1)
+jobBox.ClearTextOnFocus = false
+
+Instance.new("UICorner", jobBox).CornerRadius = UDim.new(0,8)
+
+-- Nút Join
+local joinBtn = Instance.new("TextButton", frame)
+joinBtn.Size = UDim2.fromScale(0.9, 0.3)
+joinBtn.Position = UDim2.fromScale(0.05, 0.6)
+joinBtn.Text = "JOIN SERVER"
+joinBtn.TextScaled = true
+joinBtn.BackgroundColor3 = Color3.fromRGB(0,170,127)
+joinBtn.TextColor3 = Color3.new(1,1,1)
+
+Instance.new("UICorner", joinBtn).CornerRadius = UDim.new(0,8)
+
+-- Logic Join
+joinBtn.MouseButton1Click:Connect(function()
+	local jobId = jobBox.Text
+	if jobId ~= "" then
+		TeleportService:TeleportToPlaceInstance(placeId, jobId, player)
+	end
+end)
